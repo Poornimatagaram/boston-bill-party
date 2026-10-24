@@ -18,7 +18,7 @@ The design is deliberately pragmatic. It targets a single developer building an 
 | Schema/validation | Pydantic v2 | Required `ExtractedBill` schema; strict validation yields precise field errors (Req 2.6) |
 | Decimal math | Python `decimal.Decimal` | Exact arithmetic for Sum_Check (Req 3.3, 3.4) |
 | LLM access | Thin `LLMProvider` abstraction over provider SDKs, selected by `.env` | Swap providers without code change (Req 11) |
-| RAG | Local embedded index (sentence-transformers + in-memory cosine search over a small JSON corpus) | Ten-ish MA patient-rights docs; no external vector DB needed at this scale |
+| RAG | rank-bm25 (BM25 lexical ranking over a small JSON corpus; no embedding model or vector store needed) | Lexical keyword matching is sufficient and lighter-weight for a small MA patient-rights corpus; no model download or GPU; faster cold start, fits the ~7-hour solo scope |
 | Frontend | Next.js (App Router) + Tailwind | Three screens, SSE consumption, Web Speech API access |
 | Progress transport | Server-Sent Events | One-way server→client streaming fits per-node progress (Req 9) |
 | Voice | Browser Web Speech API with text fallback | Req 10; no server-side speech dependency |
@@ -116,7 +116,7 @@ backend/
     skeptic.py            # confidence/evidence filtering (Req 6) — pure
     writer.py             # Summary + Appeal_Letter in selected language (Req 7)
   rag/
-    knowledge_base.py     # load corpus, embed, cosine retrieval
+    knowledge_base.py     # load corpus, BM25 tokenization + BM25 scoring retrieval
     corpus/               # MA patient-rights reference documents (JSON)
   llm/
     provider.py           # LLMProvider abstraction + factory (Req 11)
@@ -139,7 +139,7 @@ backend/
 - suspicious code when a code is absent from the recognized set (Req 4.4) or missing entirely (Req 4.5).
 Each Finding gets a `Confidence_Score` in [0,1] (Req 4.6). Zero line items → empty Findings (Req 4.7).
 
-**Rights_Checker** (`rights_checker.py`) — Builds a query from the `ExtractedBill` and auditor Findings, retrieves up to 10 passages within 15s (Req 5.1). Passages with `Relevance_Score ≥ 0.7` for a potential issue become rights-issue Findings citing the passage (Req 5.2) with a confidence in [0,1] (Req 5.3); below-threshold issues are omitted (Req 5.4). On failure/empty/timeout it records no rights Findings, returns an "unavailable" status, and preserves auditor Findings (Req 5.5).
+**Rights_Checker** (`rights_checker.py`) — Builds a query from the `ExtractedBill` and auditor Findings, tokenizes it, and scores the JSON corpus with BM25 (rank-bm25) to retrieve up to 10 passages within 15s (Req 5.1). Each passage's raw BM25 score is normalized to a 0–1 `Relevance_Score`, so the threshold semantics are unchanged: passages with `Relevance_Score ≥ 0.7` for a potential issue become rights-issue Findings citing the passage (Req 5.2) with a confidence in [0,1] (Req 5.3); below-threshold issues are omitted (Req 5.4). On failure/empty/timeout it records no rights Findings, returns an "unavailable" status, and preserves auditor Findings (Req 5.5).
 
 **Skeptic** (`skeptic.py`) — Pure filter. Drops Findings with confidence `< 0.5` (Req 6.2) or referencing zero line items **and** zero passages (Req 6.3). Keeps Findings with confidence `≥ 0.5` **and** at least one line-item or passage reference (Req 6.4). Empty result passes an empty set (Req 6.5).
 
@@ -448,7 +448,7 @@ Concrete scenarios not suited to universal quantification:
 Exercised with mocked or real external dependencies, 1–3 representative cases each:
 - Session creation returns a `sessionId` within 5s (Req 1.7).
 - Extractor → Auditor → Writer MVP path end to end on one synthetic bill (Req 2.2, 2.8 timeout via a delaying mock).
-- Rights_Checker retrieval returns at most 10 passages within 15s against the real embedded corpus (Req 5.1).
+- Rights_Checker retrieval returns at most 10 passages within 15s against the real BM25 index (Req 5.1).
 - SSE: a full run emits one `node_started`/`node_completed` per node and a final `done` (Req 9.2).
 - Provider routing: setting `LLM_PROVIDER` via env routes node calls to that provider (Req 11.4).
 - `/ask` returns an answer or a timeout error within 30s (Req 10.6, 10.7).
