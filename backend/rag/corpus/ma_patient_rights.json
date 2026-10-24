@@ -3,50 +3,62 @@
   "passages": [
     {
       "id": "ma-surprise-billing-er",
+      "title": "Surprise-billing protections for emergency care",
       "text": "Under Massachusetts and federal surprise-billing protections, a patient who receives emergency care at an out-of-network hospital or emergency room generally cannot be balance billed beyond the normal in-network cost sharing. Out-of-network emergency services must be covered as if they were in-network, and the patient is responsible only for the in-network deductible, copayment, and coinsurance amounts. Charges that exceed in-network cost sharing for emergency room treatment may be improper and can be disputed."
     },
     {
       "id": "ma-surprise-billing-nonemergency",
+      "title": "Surprise billing by out-of-network providers",
       "text": "When a patient is treated at an in-network facility but is unknowingly seen by an out-of-network provider such as an anesthesiologist, radiologist, pathologist, or assistant surgeon, surprise-billing protections usually bar the provider from balance billing the patient above in-network cost sharing. Patients generally cannot be charged the difference between the out-of-network billed amount and what the plan pays unless they gave informed written consent in advance."
     },
     {
       "id": "ma-itemized-bill-right",
+      "title": "Right to an itemized bill",
       "text": "A patient has the right to request and receive a fully itemized bill from a hospital or provider that lists each service, procedure, medication, and supply as a separate line item with its individual charge and billing code. Providers are expected to furnish an itemized statement on request so the patient can review each charge. An itemized bill helps identify duplicate charges, unbundled services, and charges for services that were never received."
     },
     {
       "id": "ma-duplicate-charges",
+      "title": "Protection from duplicate charges",
       "text": "Patients should not be charged more than once for the same service, procedure, or supply. Duplicate line items that repeat the same billing code and description for a single encounter may indicate a billing error. A patient may dispute duplicate charges and request that the provider correct the account and reissue a corrected statement."
     },
     {
       "id": "ma-billing-code-errors",
+      "title": "Billing code errors",
       "text": "Medical bills should use recognized billing codes such as CPT, HCPCS, or revenue codes that correspond to the services actually provided. A charge with a missing, invalid, or unrecognized billing code, or a code that does not match the described service, may be an error or an instance of upcoding. Patients can ask the provider to explain or substantiate any code they do not recognize."
     },
     {
       "id": "ma-financial-assistance",
+      "title": "Hospital financial assistance",
       "text": "Massachusetts hospitals must maintain a financial assistance and charity care policy and inform patients of their eligibility. Low-income and uninsured patients may qualify for free care or discounted charges under the hospital's financial assistance program and the state's Health Safety Net. Eligibility is generally based on household income relative to the federal poverty level, and patients have the right to apply and to receive a written determination."
     },
     {
       "id": "ma-financial-assistance-screening",
+      "title": "Screening for financial assistance",
       "text": "Hospitals are expected to screen patients for public coverage and financial assistance before pursuing aggressive collection. A patient who believes they may qualify for charity care or a sliding-scale discount can submit a financial assistance application, and the provider should pause collection activity while the application is pending. Determinations of eligibility must be provided in writing."
     },
     {
       "id": "ma-appeal-rights",
+      "title": "Right to appeal insurance decisions",
       "text": "A patient or member has the right to appeal a denied or underpaid insurance claim and to dispute charges they believe are incorrect. The internal appeal is filed with the health plan, and if the internal appeal is unsuccessful the patient may request an external review through the Massachusetts Office of Patient Protection. Appeals should state the specific charge or denial being contested and include supporting documentation such as the itemized bill and the explanation of benefits."
     },
     {
       "id": "ma-explanation-of-benefits",
+      "title": "Understanding your explanation of benefits",
       "text": "The explanation of benefits (EOB) from a health plan shows what was billed, what the plan allowed, what the plan paid, and the amount the patient owes. Patients should compare the provider's bill against the EOB; a provider bill that exceeds the patient-responsibility amount shown on the EOB, or that bills for services the plan already paid, may be improper and can be questioned."
     },
     {
       "id": "ma-collections-protections",
+      "title": "Medical debt collection protections",
       "text": "Debt-collection activity for medical bills is subject to consumer-protection rules. A provider or collection agency should not pursue collection on a disputed charge until the dispute is resolved, and patients may request validation of the debt. Patients have the right to a reasonable payment plan and should not face collection while a financial assistance application or insurance appeal is pending."
     },
     {
       "id": "ma-preventive-services-cost-share",
+      "title": "No-cost preventive services",
       "text": "Many preventive services are required to be covered with no patient cost sharing when delivered by an in-network provider. A patient billed a copayment, deductible, or coinsurance for a qualifying preventive screening or service received in network may have been charged in error and can ask the plan and provider to reprocess the claim."
     },
     {
       "id": "ma-observation-vs-inpatient",
+      "title": "Observation vs. inpatient status",
       "text": "Whether a hospital stay is billed as inpatient admission or as observation status can significantly change what the patient owes. Patients have the right to be notified of their status and to understand how it affects their bill. A stay reclassified or billed in a way that inflates the patient's cost share can be reviewed and disputed."
     }
   ]

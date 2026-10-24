@@ -70,6 +70,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Optional, Protocol
 
 from models import ExtractedBill, Finding, FindingType, Passage, RightsStatus
+from rag.knowledge_base import humanize_passage_id
 
 # Node identifier. Mirrors ``config.NodeName.RIGHTS_CHECKER`` ("rights_checker");
 # kept as a plain string so this module imports without a hard config dependency.
@@ -205,7 +206,13 @@ def is_relevant(relevance_score: Decimal) -> bool:
     return relevance_score >= RELEVANCE_THRESHOLD
 
 
-def _rights_finding_for(passage: Passage) -> Finding:
+def _passage_title(result: SearchResultLike) -> str:
+    """Readable title for a retrieved passage (never the raw id)."""
+    title = str(getattr(result, "title", "") or "").strip()
+    return title or humanize_passage_id(result.id)
+
+
+def _rights_finding_for(passage: Passage, title: str) -> Finding:
     """Construct a rights-issue Finding citing ``passage`` (Req 5.2, 5.3).
 
     The confidence is set equal to the passage's relevance score, which is in
@@ -213,14 +220,15 @@ def _rights_finding_for(passage: Passage) -> Finding:
     Finding cites the passage via ``passage_ids`` and carries no line-item
     references (the rights issue is grounded in the reference passage, not a
     specific line); the Skeptic's evidence rule (Req 6.3) is satisfied by the
-    passage reference.
+    passage reference. The human-facing description names the passage by its
+    readable ``title``; the raw id stays only in ``passage_ids``.
     """
     return Finding(
         id=f"rights_issue:{passage.id}",
         type=FindingType.RIGHTS_ISSUE,
         description=(
-            f"A potential patient-rights issue is supported by reference "
-            f"passage '{passage.id}' from {passage.source}: {passage.text}"
+            f"A potential patient-rights issue is supported by “{title}” "
+            f"({passage.source}): {passage.text}"
         ),
         confidence=passage.relevance_score,
         passage_ids=[passage.id],
@@ -292,10 +300,12 @@ def check_rights(
         return [], RightsStatus.UNAVAILABLE
 
     relevant_passages: list[Passage] = []
+    titles: dict[str, str] = {}
     for result in results:
         relevance = normalize_score(result.score)
         if not is_relevant(relevance):
             continue  # below threshold -> omit (Req 5.4)
+        titles[result.id] = _passage_title(result)
         relevant_passages.append(
             Passage(
                 id=result.id,
@@ -311,7 +321,9 @@ def check_rights(
     relevant_passages.sort(key=lambda p: (-p.relevance_score, p.id))
     top_passages = relevant_passages[:MAX_RIGHTS_FINDINGS]
 
-    rights_findings = [_rights_finding_for(passage) for passage in top_passages]
+    rights_findings = [
+        _rights_finding_for(passage, titles[passage.id]) for passage in top_passages
+    ]
     return rights_findings, RightsStatus.COMPLETED
 
 

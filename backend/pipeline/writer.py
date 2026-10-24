@@ -1,22 +1,24 @@
-"""Writer node: Summary + Appeal_Letter in the session language (Req 7).
+"""Writer node: Summary in the session language + an English Appeal_Letter (Req 7).
 
 The Writer is the final MVP node. It consumes the list of (retained) Findings
 and the session :class:`SupportedLanguage`, and produces an
 :class:`AnalysisResult` holding:
 
-* ``summary_entries`` — a plain-language Summary. With >=1 Finding there is
-  EXACTLY one entry per Finding, each identifying a distinct Finding and
-  describing its issue (Req 7.1). With zero Findings there is a single
-  "no credible issues" entry (Req 7.4).
+* ``summary_entries`` — a plain-language Summary in the SESSION language. With
+  >=1 Finding there is EXACTLY one entry per Finding, each identifying a
+  distinct Finding and describing its issue (Req 7.1). With zero Findings there
+  is a single "no credible issues" entry (Req 7.4).
 * ``appeal_letter`` — a single contesting letter with one statement per Finding
-  (Req 7.2) when there is >=1 Finding, else ``None`` (Req 7.4).
-* ``language`` — always the session language; the generation request to the LLM
-  is tagged with that language and no other (Req 7.3 / Property 12).
+  (Req 7.2) when there is >=1 Finding, else ``None`` (Req 7.4). The letter is
+  ALWAYS drafted in English regardless of the session language: it is sent to
+  Massachusetts billing offices and insurers, which work in English. Patients
+  can view a read-only translation via ``POST /sessions/{id}/translate-letter``.
+* ``language`` — always the session language (the language of the Summary).
 
 Design "Node Responsibilities / Writer":
-    With >=1 retained Finding, produces a Summary with one entry per Finding and
-    an Appeal_Letter with one contesting statement per Finding (Req 7.1, 7.2),
-    both in the session language (Req 7.3). With zero retained Findings,
+    With >=1 retained Finding, produces a Summary with one entry per Finding in
+    the session language and an English Appeal_Letter with one contesting
+    statement per Finding (Req 7.1, 7.2, 7.3). With zero retained Findings,
     produces a "no credible issues" Summary and no letter (Req 7.4). Generation
     failure returns an error with no partial output (Req 7.5).
 
@@ -51,14 +53,17 @@ NODE_NAME = "writer"
 # room to draft prose.
 WRITER_TIMEOUT_S: float = 60.0
 
-# Human-readable language names used to tag the generation request so the LLM
-# drafts prose in the selected language and no other (Req 7.3 / Property 12).
+# Human-readable language names used to tag each generation request so the LLM
+# drafts prose in the intended language and no other (Req 7.3 / Property 12).
 _LANGUAGE_NAMES: dict[SupportedLanguage, str] = {
     SupportedLanguage.EN: "English",
     SupportedLanguage.ES: "Spanish",
     SupportedLanguage.PT: "Portuguese",
     SupportedLanguage.HT: "Haitian Creole",
 }
+
+# The appeal letter is always written in English, whatever the session language.
+LETTER_LANGUAGE: SupportedLanguage = SupportedLanguage.EN
 
 
 class LLMProvider(Protocol):
@@ -92,8 +97,8 @@ class WriterError(Exception):
         return {"failedNode": NODE_NAME, "message": self.message}
 
 
-def _language_name(language: SupportedLanguage) -> str:
-    """Return the display name used to tag the request language (Req 7.3)."""
+def language_name(language: SupportedLanguage) -> str:
+    """Return the display name used to tag a request's language (Req 7.3)."""
     return _LANGUAGE_NAMES.get(language, language.value)
 
 
@@ -105,7 +110,7 @@ def _finding_label(finding: Finding, index: int) -> str:
 
 def _summary_system_prompt(language: SupportedLanguage) -> str:
     """System prompt for phrasing a single summary entry in ``language``."""
-    name = _language_name(language)
+    name = language_name(language)
     return (
         f"You are a patient-advocate assistant. Write entirely in {name}. "
         "Given one billing-analysis finding, write a single plain-language "
@@ -115,9 +120,9 @@ def _summary_system_prompt(language: SupportedLanguage) -> str:
     )
 
 
-def _letter_system_prompt(language: SupportedLanguage, count: int) -> str:
-    """System prompt for drafting the appeal letter body in ``language``."""
-    name = _language_name(language)
+def _letter_system_prompt(count: int) -> str:
+    """System prompt for drafting the appeal letter body, always in English."""
+    name = language_name(LETTER_LANGUAGE)
     return (
         f"You are a patient-advocate assistant. Write entirely in {name}. "
         "Draft a polite, professional medical-bill appeal letter that contests "
@@ -129,13 +134,16 @@ def _letter_system_prompt(language: SupportedLanguage, count: int) -> str:
 
 
 def _finding_user_prompt(finding: Finding, index: int) -> str:
-    """Render a single Finding into prompt text for summary phrasing."""
+    """Render a single Finding into prompt text for summary phrasing.
+
+    Raw reference-passage ids (e.g. ``ma-duplicate-charges``) are deliberately
+    left out: rights-issue descriptions already name the passage by its readable
+    title, and leaving ids in the prompt invites the LLM to quote them.
+    """
     label = _finding_label(finding, index)
     refs = ""
     if finding.line_item_ids:
         refs += f" Line items: {', '.join(finding.line_item_ids)}."
-    if finding.passage_ids:
-        refs += f" References: {', '.join(finding.passage_ids)}."
     totals = ""
     if finding.computed_total is not None or finding.stated_total is not None:
         totals = (
@@ -175,14 +183,15 @@ def write_analysis(
     Branches:
 
     * **>=1 Finding** — build ``summary_entries`` with exactly one entry per
-      Finding (Req 7.1, guaranteed by construction) and a single
-      ``appeal_letter`` with one contesting statement per Finding (Req 7.2),
-      both drafted in ``language`` (Req 7.3).
+      Finding (Req 7.1, guaranteed by construction) drafted in ``language``,
+      and a single ``appeal_letter`` with one contesting statement per Finding
+      (Req 7.2) drafted in English.
     * **zero Findings** — a single "no credible issues" summary entry drafted in
       ``language`` and ``appeal_letter = None`` (Req 7.4).
 
-    All LLM requests are tagged with ``language`` and no other, and the returned
-    ``AnalysisResult.language`` equals ``language`` (Req 7.3 / Property 12).
+    Summary requests are tagged with ``language`` and the letter request with
+    English; the returned ``AnalysisResult.language`` equals ``language`` (the
+    Summary's language, Req 7.3 / Property 12).
 
     Raises:
         WriterError: on any generation failure (provider error, timeout, or an
@@ -217,12 +226,36 @@ def _call_provider(provider: LLMProvider, *, system: str, user: str, what: str) 
     return _require_text(completion, what)
 
 
+def translate_letter(
+    letter: str,
+    target: SupportedLanguage,
+    provider: LLMProvider,
+) -> str:
+    """Translate the English appeal letter into ``target`` for the patient.
+
+    Used only to help the patient understand the letter; the English letter is
+    what gets sent. The translation is never stored on the session.
+
+    Raises:
+        WriterError: on a provider error/timeout or an empty completion.
+    """
+    name = language_name(target)
+    system = (
+        "You are a professional medical-billing translator. Translate the "
+        f"following English appeal letter into {name}. Preserve the meaning, "
+        "paragraphs, line breaks, names, amounts, dates, and billing codes "
+        "exactly. Return only the translated letter, with no preamble, notes, "
+        "or markdown."
+    )
+    return _call_provider(provider, system=system, user=letter, what="translation")
+
+
 def _write_no_findings(
     language: SupportedLanguage,
     provider: LLMProvider,
 ) -> AnalysisResult:
     """Zero-Finding branch: one "no credible issues" entry, no letter (Req 7.4)."""
-    name = _language_name(language)
+    name = language_name(language)
     system = (
         f"You are a patient-advocate assistant. Write entirely in {name}. "
         "Write a single plain-language sentence telling the patient that the "
@@ -250,8 +283,9 @@ def _write_with_findings(
     """>=1 Finding branch: one summary entry per Finding + one letter (Req 7.1, 7.2, 7.3).
 
     The Summary is built deterministically with exactly one entry per Finding so
-    Property 11 holds by construction; the LLM only phrases each entry. The
-    letter is drafted once with one contesting statement per Finding. All output
+    Property 11 holds by construction; the LLM only phrases each entry, in the
+    session language. The letter is drafted once, in English, with one
+    contesting statement per Finding. All output
     is generated BEFORE any ``AnalysisResult`` is constructed, so a failure at
     any step yields a :class:`WriterError` and no partial result (Req 7.5).
     """
@@ -269,10 +303,10 @@ def _write_with_findings(
         )
         summary_entries.append(entry)
 
-    # One letter with one contesting statement per Finding (Req 7.2).
+    # One English letter with one contesting statement per Finding (Req 7.2).
     letter = _call_provider(
         provider,
-        system=_letter_system_prompt(language, len(findings)),
+        system=_letter_system_prompt(len(findings)),
         user=_letter_user_prompt(findings),
         what="appeal letter",
     )

@@ -36,6 +36,18 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
+  Calculator,
+  Check,
+  FileSearch,
+  LoaderCircle,
+  PenLine,
+  Scale,
+  ShieldCheck,
+  TriangleAlert,
+  WifiOff,
+  type LucideIcon,
+} from "lucide-react";
+import {
   getResultStatus,
   subscribeToEvents,
   TOTAL_NODES,
@@ -44,6 +56,8 @@ import {
   type ResultError,
   type ResultProgress,
 } from "@/lib/api";
+import type { Dictionary } from "@/i18n/dictionary";
+import { useT } from "@/i18n/uiLanguage";
 
 /**
  * If no SSE event arrives within this window while the pipeline is running,
@@ -53,60 +67,33 @@ import {
 const INACTIVITY_TIMEOUT_MS = 60_000;
 
 /**
- * The five pipeline agents in canonical order, each with a demo-friendly name
- * and a one-line description. Drives the vertical stepper and the active-node
- * label (Req 9.1). Node ids mirror the backend's conceptual node names.
+ * The five pipeline agents in canonical order with their icons. Names,
+ * descriptions, and activity labels come from the UI dictionary (`agents`).
+ * Node ids mirror the backend's conceptual node names (Req 9.1).
  */
-const AGENT_STEPS: ReadonlyArray<{
-  id: string;
-  name: string;
-  description: string;
-}> = [
-  {
-    id: "extractor",
-    name: "Extractor",
-    description: "Reads your bill and pulls out the line items.",
-  },
-  {
-    id: "auditor",
-    name: "Auditor",
-    description: "Checks the math and looks for duplicate charges.",
-  },
-  {
-    id: "rights_checker",
-    name: "Rights Checker",
-    description: "Reviews the bill against patient-rights rules.",
-  },
-  {
-    id: "skeptic",
-    name: "Skeptic",
-    description: "Double-checks each finding and drops weak ones.",
-  },
-  {
-    id: "writer",
-    name: "Writer",
-    description: "Writes your plain-language summary and appeal letter.",
-  },
+const AGENT_STEPS: ReadonlyArray<{ id: keyof Dictionary["agents"]; icon: LucideIcon }> = [
+  { id: "extractor", icon: FileSearch },
+  { id: "auditor", icon: Calculator },
+  { id: "rights_checker", icon: Scale },
+  { id: "skeptic", icon: ShieldCheck },
+  { id: "writer", icon: PenLine },
 ];
 
-/** Friendly labels for the five node ids (for the active-node / error line). */
-const NODE_LABELS: Record<string, string> = {
-  extractor: "Reading your bill",
-  auditor: "Checking the math and charges",
-  rights_checker: "Reviewing patient rights",
-  skeptic: "Double-checking the findings",
-  writer: "Writing your summary and appeal letter",
-};
-
-function nodeLabel(nodeId: string | null | undefined): string {
-  if (!nodeId) return "Starting up";
-  return NODE_LABELS[nodeId] ?? nodeId;
+/** Friendly activity label for a node id (for the active-node / error line). */
+function nodeLabel(t: Dictionary, nodeId: string | null | undefined): string {
+  if (!nodeId) return t.progress.startingUp;
+  return t.agents[nodeId as keyof Dictionary["agents"]]?.activity ?? nodeId;
 }
 
 type ViewState =
   | { kind: "running"; progress: ResultProgress }
   | { kind: "error"; error: ResultError; lastProgress: ResultProgress | null }
-  | { kind: "failed"; message: string; lastProgress: ResultProgress | null }
+  | {
+      kind: "failed";
+      // Dictionary key, resolved at render so it follows the UI language.
+      messageKey: "lostLive" | "lostConnection";
+      lastProgress: ResultProgress | null;
+    }
   | { kind: "interrupted"; lastProgress: ResultProgress | null };
 
 const INITIAL_PROGRESS: ResultProgress = {
@@ -128,6 +115,7 @@ function toResultProgress(event: PipelineProgressEvent): ResultProgress {
 
 export default function ProgressView({ sessionId }: { sessionId: string }) {
   const router = useRouter();
+  const t = useT();
   const [view, setView] = useState<ViewState>({
     kind: "running",
     progress: INITIAL_PROGRESS,
@@ -233,16 +221,14 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
         lastProgressRef.current = status.progress;
         setView({
           kind: "failed",
-          message:
-            "We lost the live connection to the analysis. It may still be running.",
+          messageKey: "lostLive",
           lastProgress: status.progress,
         });
       } catch {
         if (!active) return;
         setView({
           kind: "failed",
-          message:
-            "We lost connection to the analysis. Please refresh to try again.",
+          messageKey: "lostConnection",
           lastProgress: lastProgressRef.current,
         });
       }
@@ -280,21 +266,37 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
     return "pending";
   };
 
+  const pct = Math.round(
+    (Math.min(progress.completedCount, total) / Math.max(total, 1)) * 100,
+  );
+
   return (
     <section
       aria-live="polite"
-      className="flex flex-col gap-6 rounded-2xl border border-border-subtle bg-surface p-5 shadow-card sm:p-7"
+      className="flex flex-col gap-6 rounded-3xl border border-white bg-white p-5 shadow-card-lg sm:p-8"
     >
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-sm font-medium text-navy-500 dark:text-navy-200">
-          Steps completed
-        </span>
-        <span
-          className="font-mono text-lg font-semibold tabular-nums text-navy-800 dark:text-white"
-          aria-label={`${progress.completedCount} of ${total} steps completed`}
+      {/* Overall progress. */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-sm font-semibold text-navy-600">
+            {t.progress.stepsCompleted}
+          </span>
+          <span
+            className="font-mono text-lg font-bold text-navy-900 tabular-nums"
+            aria-label={t.progress.stepsCompletedAria(progress.completedCount, total)}
+          >
+            {progress.completedCount}/{total}
+          </span>
+        </div>
+        <div
+          aria-hidden="true"
+          className="h-2 overflow-hidden rounded-full bg-navy-100"
         >
-          {progress.completedCount}/{total}
-        </span>
+          <div
+            className="h-full rounded-full bg-linear-to-r from-teal-400 via-teal-500 to-coral-400 transition-[width] duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
 
       {/* Vertical stepper of the five agents (Req 9.1, 9.3). */}
@@ -302,6 +304,7 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
         {AGENT_STEPS.map((step, i) => {
           const state = stepState(step.id);
           const isLast = i === AGENT_STEPS.length - 1;
+          const AgentIcon = step.icon;
           return (
             <li key={step.id} className="flex gap-4">
               {/* Marker + connector rail. */}
@@ -309,34 +312,32 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
                 <span
                   aria-hidden="true"
                   className={[
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                     state === "done"
                       ? "border-teal-500 bg-teal-500 text-white"
                       : state === "active"
-                        ? "border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-200"
+                        ? "border-teal-400 bg-teal-50 text-teal-600"
                         : state === "failed"
-                          ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300"
-                          : "border-navy-200 bg-surface text-navy-400 dark:border-navy-700 dark:text-navy-400",
+                          ? "border-coral-400 bg-coral-50 text-coral-600"
+                          : "border-navy-200 bg-white text-navy-300",
                   ].join(" ")}
                 >
                   {state === "done" ? (
-                    "✓"
+                    <Check className="h-5 w-5" strokeWidth={3} />
                   ) : state === "active" ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+                    <LoaderCircle className="h-5 w-5 animate-spin" />
                   ) : state === "failed" ? (
-                    "!"
+                    <TriangleAlert className="h-5 w-5" />
                   ) : (
-                    i + 1
+                    <AgentIcon className="h-4 w-4" />
                   )}
                 </span>
                 {!isLast ? (
                   <span
                     aria-hidden="true"
                     className={[
-                      "my-1 w-0.5 flex-1",
-                      state === "done"
-                        ? "bg-teal-400"
-                        : "bg-navy-100 dark:bg-navy-700",
+                      "my-1 w-0.5 flex-1 rounded-full",
+                      state === "done" ? "bg-teal-400" : "bg-navy-100",
                     ].join(" ")}
                   />
                 ) : null}
@@ -344,27 +345,39 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
 
               {/* Step text. */}
               <div className={isLast ? "pb-0" : "pb-6"}>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p
                     className={[
-                      "text-sm font-semibold",
+                      "flex items-center gap-1.5 text-sm font-semibold",
                       state === "pending"
-                        ? "text-navy-400 dark:text-navy-400"
+                        ? "text-navy-400"
                         : state === "failed"
-                          ? "text-red-600 dark:text-red-300"
-                          : "text-navy-900 dark:text-white",
+                          ? "text-coral-700"
+                          : "text-navy-900",
                     ].join(" ")}
                   >
-                    {step.name}
+                    {state !== "pending" ? (
+                      <AgentIcon
+                        className="h-4 w-4 text-teal-600"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {t.agents[step.id].name}
                   </p>
                   {state === "active" ? (
-                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-200">
-                      In progress
+                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+                      {t.progress.inProgress}
+                    </span>
+                  ) : state === "done" ? (
+                    <span className="sr-only">{t.progress.doneSr}</span>
+                  ) : state === "failed" ? (
+                    <span className="rounded-full bg-coral-100 px-2 py-0.5 text-[11px] font-semibold text-coral-700">
+                      {t.progress.failed}
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-0.5 text-sm text-navy-500 dark:text-navy-300">
-                  {step.description}
+                <p className="mt-0.5 text-sm text-navy-500">
+                  {t.agents[step.id].description}
                 </p>
               </div>
             </li>
@@ -374,50 +387,65 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
 
       {/* Status line / error / interruption, below the stepper. */}
       {view.kind === "running" ? (
-        <p className="text-sm text-navy-600 dark:text-navy-200">
-          {nodeLabel(view.progress.activeNode)}…
+        <p className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800">
+          <LoaderCircle
+            className="h-4 w-4 shrink-0 animate-spin"
+            aria-hidden="true"
+          />
+          {nodeLabel(t, view.progress.activeNode)}…
         </p>
       ) : view.kind === "error" ? (
         <div
           role="alert"
-          className="flex flex-col gap-1 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/40"
+          className="flex gap-3 rounded-xl border border-coral-200 bg-coral-50 p-4"
         >
-          <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-            Analysis stopped
-          </p>
-          <p className="text-sm text-navy-700 dark:text-navy-200">
-            A problem occurred during “{nodeLabel(view.error.failedNode)}”.
-          </p>
-          {view.error.message ? (
-            <p className="text-sm text-navy-500 dark:text-navy-300">
-              {view.error.message}
+          <TriangleAlert
+            className="mt-0.5 h-5 w-5 shrink-0 text-coral-600"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-coral-800">
+              {t.progress.stoppedTitle}
             </p>
-          ) : null}
+            <p className="text-sm text-navy-700">
+              {t.progress.problemDuring(nodeLabel(t, view.error.failedNode))}
+            </p>
+            {view.error.message ? (
+              <p className="text-sm text-navy-500">{view.error.message}</p>
+            ) : null}
+          </div>
         </div>
       ) : view.kind === "interrupted" ? (
         <div
           role="alert"
-          className="flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30"
+          className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
         >
-          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-            The analysis seems to have stalled
-          </p>
-          <p className="text-sm text-navy-700 dark:text-navy-200">
-            We haven’t received a progress update in a while. The analysis may
-            still be running — your progress so far is shown above.
-          </p>
+          <TriangleAlert
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-600"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-amber-800">
+              {t.progress.stalledTitle}
+            </p>
+            <p className="text-sm text-navy-700">{t.progress.stalledBody}</p>
+          </div>
         </div>
       ) : (
         <div
           role="alert"
-          className="flex flex-col gap-1 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/40"
+          className="flex gap-3 rounded-xl border border-coral-200 bg-coral-50 p-4"
         >
-          <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-            Analysis unavailable
-          </p>
-          <p className="text-sm text-navy-700 dark:text-navy-200">
-            {view.message}
-          </p>
+          <WifiOff
+            className="mt-0.5 h-5 w-5 shrink-0 text-coral-600"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-coral-800">
+              {t.progress.unavailableTitle}
+            </p>
+            <p className="text-sm text-navy-700">{t.progress[view.messageKey]}</p>
+          </div>
         </div>
       )}
     </section>

@@ -23,10 +23,7 @@ export default async function ResultsPage({
   const { sessionId } = await params;
 
   return (
-    <AppShell
-      title="Your results"
-      subtitle="Here’s what our agents found, plus a ready-to-send appeal letter."
-    >
+    <AppShell page="results">
       <ResultsView sessionId={sessionId} />
     </AppShell>
   );

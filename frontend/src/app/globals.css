@@ -1,69 +1,75 @@
 @import "tailwindcss";
 
 /*
- * Boston Bill Party — brand palette.
+ * Boston Bill Party — design tokens.
  *
- * Navy (ink/primary) + teal (accent) on a soft off-white canvas, with a dark
- * mode that keeps the same hues but inverts the surfaces. Exposed through
- * Tailwind's @theme so classes like `bg-navy-600`, `text-teal-400`,
- * `bg-canvas`, and `shadow-card` are available throughout the app.
+ * Navy (ink / primary), teal (accent), and coral (highlight) scales plus soft
+ * card shadows, exposed through Tailwind's @theme so utilities such as
+ * `bg-navy-800`, `text-teal-600`, `from-coral-400`, and `shadow-card` work
+ * everywhere. The app uses a single light theme for a consistent demo look.
  */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-canvas: var(--canvas);
-  --color-surface: var(--surface);
-  --color-border-subtle: var(--border-subtle);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
   /* Navy — primary / ink */
-  --color-navy-50: #eef2f7;
-  --color-navy-100: #dbe4ee;
-  --color-navy-200: #b7c7db;
-  --color-navy-300: #8aa3c0;
-  --color-navy-400: #5b78a0;
-  --color-navy-500: #3a567f;
-  --color-navy-600: #26406a;
-  --color-navy-700: #1b2f52;
-  --color-navy-800: #142440;
-  --color-navy-900: #0e1a30;
-  --color-navy-950: #0a1324;
+  --color-navy-50: #eef2f8;
+  --color-navy-100: #dbe3ef;
+  --color-navy-200: #b6c5dc;
+  --color-navy-300: #8aa1c2;
+  --color-navy-400: #5d7aa3;
+  --color-navy-500: #3d5a86;
+  --color-navy-600: #2a446e;
+  --color-navy-700: #1d3459;
+  --color-navy-800: #152745;
+  --color-navy-900: #0e1b33;
+  --color-navy-950: #091224;
 
   /* Teal — accent */
-  --color-teal-50: #e6fbf8;
-  --color-teal-100: #c3f4ec;
-  --color-teal-200: #8ee8da;
-  --color-teal-300: #54d6c4;
-  --color-teal-400: #27bcab;
-  --color-teal-500: #159e90;
-  --color-teal-600: #0f7e74;
-  --color-teal-700: #11645d;
-  --color-teal-800: #124f4a;
-  --color-teal-900: #11403d;
+  --color-teal-50: #e8fbf8;
+  --color-teal-100: #c6f5ee;
+  --color-teal-200: #90eadc;
+  --color-teal-300: #55d8c5;
+  --color-teal-400: #26bfac;
+  --color-teal-500: #13a192;
+  --color-teal-600: #0d8178;
+  --color-teal-700: #106761;
+  --color-teal-800: #12524e;
+  --color-teal-900: #124441;
 
-  /* Soft shadow for rounded cards */
-  --shadow-card: 0 1px 2px rgb(14 26 48 / 0.04),
-    0 8px 24px -8px rgb(14 26 48 / 0.12);
-  --shadow-card-lg: 0 2px 4px rgb(14 26 48 / 0.05),
-    0 20px 40px -12px rgb(14 26 48 / 0.18);
+  /* Coral — warm highlight */
+  --color-coral-50: #fff4f1;
+  --color-coral-100: #ffe4dc;
+  --color-coral-200: #ffc7b8;
+  --color-coral-300: #ffa08a;
+  --color-coral-400: #ff7b62;
+  --color-coral-500: #f75c42;
+  --color-coral-600: #df432b;
+  --color-coral-700: #b93422;
+  --color-coral-800: #972d20;
+  --color-coral-900: #7c291f;
+
+  --shadow-card: 0 1px 2px rgb(14 27 51 / 0.05),
+    0 10px 30px -12px rgb(14 27 51 / 0.18);
+  --shadow-card-lg: 0 2px 6px rgb(14 27 51 / 0.06),
+    0 30px 60px -20px rgb(14 27 51 / 0.35);
 }
 
 :root {
-  --background: #f4f7fb;
-  --foreground: #0e1a30;
-  --canvas: #f4f7fb;
-  --surface: #ffffff;
-  --border-subtle: #e2e8f2;
+  --background: #f6f8fc;
+  --foreground: #0e1b33;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a1324;
-    --foreground: #e8eef6;
-    --canvas: #0a1324;
-    --surface: #101d36;
-    --border-subtle: #1f3152;
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
@@ -71,4 +77,82 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* -------------------------------------------------------------------------
+ * "How it works" 3D tilt cards: a perspective stage with cards tilted at
+ * rest that flatten and lift on hover/focus. Tilt only applies on wider
+ * screens; stacked mobile cards stay flat. Respects reduced motion.
+ * ------------------------------------------------------------------------- */
+.tilt-stage {
+  perspective: 1200px;
+}
+
+/* No preserve-3d / translateZ children: nested 3D layers can render behind
+   the card's own background in some browsers (hiding the icon tile). */
+.tilt-card {
+  transition:
+    transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 400ms ease;
+  will-change: transform;
+}
+
+@media (min-width: 768px) {
+  .tilt-left {
+    transform: rotateY(16deg) rotateX(6deg);
+  }
+  .tilt-center {
+    transform: rotateX(10deg) translateY(-8px);
+  }
+  .tilt-right {
+    transform: rotateY(-16deg) rotateX(6deg);
+  }
+}
+
+.tilt-card:hover,
+.tilt-card:focus-within {
+  transform: translateY(-12px) rotateX(0deg) rotateY(0deg) scale(1.02);
+  box-shadow: var(--shadow-card-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt-card {
+    transition: none;
+  }
+  .tilt-card:hover,
+  .tilt-card:focus-within {
+    transform: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+ * Print: only the appeal letter. The letter is portaled into <body> as
+ * `.print-letter` (see LetterActions); everything else is hidden on paper.
+ * ------------------------------------------------------------------------- */
+.print-letter {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 2cm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  body > *:not(.print-letter) {
+    display: none !important;
+  }
+
+  .print-letter {
+    display: block !important;
+    white-space: pre-wrap;
+    color: #000;
+    font:
+      12pt/1.6 Georgia,
+      "Times New Roman",
+      serif;
+  }
 }

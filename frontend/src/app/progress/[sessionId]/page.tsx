@@ -22,10 +22,7 @@ export default async function ProgressPage({
   const { sessionId } = await params;
 
   return (
-    <AppShell
-      title="Analyzing your bill"
-      subtitle="Five specialized agents review your bill one step at a time."
-    >
+    <AppShell page="progress">
       <ProgressView sessionId={sessionId} />
     </AppShell>
   );

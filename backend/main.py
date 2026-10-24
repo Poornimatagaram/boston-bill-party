@@ -56,6 +56,7 @@ import sessions
 from config import ConfigError, NodeName, load_config
 from eval.harness import EmptyEvalSetError, run_evaluation
 from models import SupportedLanguage
+from pipeline.writer import translate_letter
 from sessions import create_session, get_session
 
 # --- Upload size bounds (Req 1.3) -------------------------------------------
@@ -82,6 +83,11 @@ MAX_QUESTION_CHARS = 500
 # (Req 10.7). We bound the (blocking) provider call at 30s and surface a clear
 # timeout error if it is exceeded.
 ASK_TIMEOUT_SECONDS = 30.0
+
+# --- Letter translation timeout ---------------------------------------------
+# Translating a full letter is longer prose generation than a Q&A answer, so it
+# gets a wider bound. A slow provider yields a clear 504 instead of hanging.
+TRANSLATE_TIMEOUT_SECONDS = 60.0
 
 # Truthy string values accepted for the synthetic-data marker (Req 12.2).
 _TRUTHY = {"true", "1", "yes", "on"}
@@ -685,6 +691,81 @@ async def ask_question_endpoint(session_id: str, body: AskRequest):
         )
 
     return {"answer": answer}
+
+
+class TranslateLetterRequest(BaseModel):
+    """Body for ``POST /sessions/{id}/translate-letter`` — the English letter.
+
+    The frontend sends the CURRENT (possibly edited) letter text so the
+    translation matches what the patient sees. Length rules are enforced in the
+    handler for a clear ``400`` message.
+    """
+
+    letter: str = Field(..., description="The English appeal letter to translate.")
+
+
+@app.post("/sessions/{session_id}/translate-letter")
+async def translate_letter_endpoint(session_id: str, body: TranslateLetterRequest):
+    """Translate the English appeal letter into the session language.
+
+    The appeal letter is always written in English (it is what gets sent). This
+    read-only translation only helps a non-English-speaking patient understand
+    it; it is returned to the caller and never stored on the session.
+
+    * Unknown ``session_id``                         -> ``404``.
+    * Session language is English                    -> ``400`` (nothing to do).
+    * Empty/whitespace-only or >20,000-char letter   -> ``400``.
+    * Provider exceeds the 60s bound                 -> ``504``.
+    * Provider failure / empty completion            -> ``502`` (generic message).
+    * Success -> ``200`` ``{"translation": <text>, "language": <code>}``.
+
+    ``get_provider`` is read via the ``sessions`` module so tests can inject a
+    mock; the blocking call runs off the event loop under ``asyncio.wait_for``.
+    """
+    session = get_session(session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No session found for id {session_id!r}.",
+        )
+
+    if session.language == SupportedLanguage.EN:
+        raise HTTPException(
+            status_code=400,
+            detail="This session's language is English, so no translation is needed.",
+        )
+
+    letter = body.letter.strip()
+    if not letter:
+        raise HTTPException(status_code=400, detail="Letter must not be empty.")
+    if len(letter) > MAX_LETTER_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Letter is too long ({len(letter)} characters). "
+                f"The maximum is {MAX_LETTER_CHARS} characters."
+            ),
+        )
+
+    provider = sessions.get_provider()
+    try:
+        translation = await asyncio.wait_for(
+            asyncio.to_thread(translate_letter, letter, session.language, provider),
+            timeout=TRANSLATE_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail="The translation took too long. Please try again.",
+        )
+    except Exception:
+        # Do not leak provider internals or the API key.
+        raise HTTPException(
+            status_code=502,
+            detail="The translation could not be generated due to a provider error.",
+        )
+
+    return {"translation": translation, "language": session.language.value}
 
 
 @app.post("/eval/run")

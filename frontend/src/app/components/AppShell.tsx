@@ -1,38 +1,38 @@
+"use client";
+
 import type { ReactNode } from "react";
-import BrandHeader from "./BrandHeader";
+import { useT } from "@/i18n/uiLanguage";
 
 /**
- * Page shell shared by every screen: the branded header above a centered,
- * mobile-friendly content column with an optional page title + subtitle. Keeps
- * spacing and max-width consistent so the three screens feel like one app.
+ * Page container for the Progress and Results screens: a soft gradient title
+ * band above a centered, mobile-friendly content column. The title/subtitle
+ * come from the UI dictionary (`pages[page]`). The sticky header and footer
+ * come from the root layout.
  */
 export default function AppShell({
-  title,
-  subtitle,
+  page,
   children,
 }: {
-  title?: string;
-  subtitle?: ReactNode;
+  page: "progress" | "results";
   children: ReactNode;
 }) {
+  const { title, subtitle } = useT().pages[page];
+
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
-      <BrandHeader />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-        {title ? (
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl font-semibold tracking-tight text-navy-900 sm:text-2xl dark:text-white">
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="text-sm text-navy-500 sm:text-base dark:text-navy-200">
-                {subtitle}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+    <main className="relative flex flex-1 flex-col">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-linear-to-br from-teal-50 via-white to-coral-50"
+      />
+      <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 pt-8 pb-28 sm:px-6 sm:pt-12">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
+            {title}
+          </h1>
+          <p className="text-sm text-navy-500 sm:text-base">{subtitle}</p>
+        </div>
         {children}
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

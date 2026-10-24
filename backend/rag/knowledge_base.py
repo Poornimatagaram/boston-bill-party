@@ -13,13 +13,15 @@ Each ``*.json`` file under ``rag/corpus/`` is an object with:
     {
       "source": "<human-readable source label>",
       "passages": [
-        {"id": "<unique id>", "text": "<passage text>"},
+        {"id": "<unique id>", "title": "<readable title>", "text": "<passage text>"},
         ...
       ]
     }
 
 A passage's ``source`` defaults to the file-level ``source`` but may be
-overridden per passage with a ``"source"`` key.
+overridden per passage with a ``"source"`` key. ``title`` is optional and
+falls back to a humanized id (see :func:`humanize_passage_id`); it is what the
+UI shows instead of the raw id.
 
 Tokenization
 ------------
@@ -64,6 +66,12 @@ _CORPUS_DIR = Path(__file__).resolve().parent / "corpus"
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 
+def humanize_passage_id(passage_id: str) -> str:
+    """Turn an id like ``ma-duplicate-charges`` into ``Duplicate charges``."""
+    words = passage_id.removeprefix("ma-").replace("-", " ").replace("_", " ").strip()
+    return words[:1].upper() + words[1:] if words else passage_id
+
+
 def tokenize(text: str) -> list[str]:
     """Tokenize ``text`` deterministically for BM25.
 
@@ -90,12 +98,14 @@ class SearchResult:
         source: The passage's source label.
         score: The raw BM25 score (non-negative float; higher is more
             relevant). Not normalized -- task 12.2 normalizes to [0, 1].
+        title: Readable passage title shown instead of the raw id.
     """
 
     id: str
     text: str
     source: str
     score: float
+    title: str = ""
 
     def to_passage(self, relevance_score: Decimal) -> Passage:
         """Build a :class:`Passage` from this result and a normalized score.
@@ -127,6 +137,7 @@ class _CorpusEntry:
     text: str
     source: str
     tokens: list[str]
+    title: str = ""
 
 
 class KnowledgeBase:
@@ -195,12 +206,16 @@ class KnowledgeBase:
                 seen_ids.add(passage_id)
 
                 source = str(raw.get("source", file_source))
+                title = str(raw.get("title", "")).strip() or humanize_passage_id(
+                    passage_id
+                )
                 entries.append(
                     _CorpusEntry(
                         id=passage_id,
                         text=text,
                         source=source,
                         tokens=tokenize(text),
+                        title=title,
                     )
                 )
 
@@ -259,6 +274,7 @@ class KnowledgeBase:
                     text=entry.text,
                     source=entry.source,
                     score=float(scores[idx]),
+                    title=entry.title,
                 )
             )
         return results

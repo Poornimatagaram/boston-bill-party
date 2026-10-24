@@ -9,7 +9,7 @@
  * current one. To coordinate that across independent buttons, a single provider
  * owns the lone `window.speechSynthesis` queue and tracks which trigger id is
  * currently speaking; each button reads that shared state to decide whether it
- * should show "🔊 …" (idle) or "⏹ Stop" (it is the active speaker).
+ * shows the Volume2 icon (idle) or the Square stop icon (active speaker).
  *
  * Voice selection matches the session language with a graceful fallback to the
  * browser default voice (same behavior the previous standalone button had).
