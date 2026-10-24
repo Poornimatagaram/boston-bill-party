@@ -42,12 +42,16 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   confirmLetter,
+  DEFAULT_LANGUAGE,
   getResultStatus,
   type Finding,
   type FindingType,
   type ResultError,
   type ResultStatus,
+  type SupportedLanguage,
 } from "@/lib/api";
+import ReadAloudButton from "./ReadAloudButton";
+import { ReadAloudProvider } from "./readAloud";
 import VoiceQA from "./VoiceQA";
 
 /** Maximum characters the editable Appeal_Letter accepts (Req 8.3). */
@@ -83,6 +87,7 @@ interface LoadedResult {
   summaryEntries: string[];
   appealLetter: string | null;
   findings: Finding[];
+  language: SupportedLanguage;
 }
 
 type LoadState =
@@ -113,11 +118,13 @@ function toLoadedResult(status: {
   summaryEntries?: string[];
   appealLetter?: string | null;
   findings?: Finding[];
+  language?: SupportedLanguage;
 }): LoadedResult {
   return {
     summaryEntries: status.summaryEntries ?? [],
     appealLetter: status.appealLetter ?? null,
     findings: status.findings ?? [],
+    language: status.language ?? DEFAULT_LANGUAGE,
   };
 }
 
@@ -287,6 +294,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
   const isError = load.kind === "error";
 
   return (
+    <ReadAloudProvider>
     <div className="flex flex-col gap-8">
       {isError ? (
         <section
@@ -325,11 +333,27 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Summary</h2>
         {result.summaryEntries.length > 0 ? (
-          <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-zinc-800 dark:text-zinc-200">
-            {result.summaryEntries.map((entry, i) => (
-              <li key={i}>{entry}</li>
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-2 text-sm text-zinc-800 dark:text-zinc-200">
+              {result.summaryEntries.map((entry, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <ReadAloudButton
+                    id={`summary-entry-${i}`}
+                    text={entry}
+                    language={result.language}
+                    label="this summary item"
+                    iconOnly
+                  />
+                  <span className="mt-0.5">{entry}</span>
+                </li>
+              ))}
+            </ul>
+            <ReadAloudButton
+              id="summary-all"
+              text={result.summaryEntries.join(". ")}
+              language={result.language}
+            />
+          </>
         ) : (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             No summary is available yet.
@@ -344,24 +368,36 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
             Detected issues
           </h2>
           <ul className="flex flex-col gap-3">
-            {result.findings.map((f) => (
-              <li
-                key={f.id}
-                className="rounded-md border border-zinc-200 p-4 dark:border-zinc-800"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {FINDING_TYPE_LABELS[f.type] ?? f.type}
-                  </span>
-                  <span className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-                    confidence {f.confidence}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-                  {f.description}
-                </p>
-              </li>
-            ))}
+            {result.findings.map((f) => {
+              const typeLabel = FINDING_TYPE_LABELS[f.type] ?? f.type;
+              return (
+                <li
+                  key={f.id}
+                  className="rounded-md border border-zinc-200 p-4 dark:border-zinc-800"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <ReadAloudButton
+                        id={`finding-${f.id}`}
+                        text={`${typeLabel}. ${f.description}`}
+                        language={result.language}
+                        label="this issue"
+                        iconOnly
+                      />
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        {typeLabel}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+                      confidence {f.confidence}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                    {f.description}
+                  </p>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
@@ -371,12 +407,21 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
       {letter !== null && result.appealLetter !== null ? (
         <section className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between gap-3">
-            <label
-              htmlFor={letterFieldId}
-              className="text-lg font-semibold tracking-tight"
-            >
-              Appeal letter
-            </label>
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor={letterFieldId}
+                className="text-lg font-semibold tracking-tight"
+              >
+                Appeal letter
+              </label>
+              <ReadAloudButton
+                id="appeal-letter"
+                text={letter}
+                language={result.language}
+                label="the appeal letter"
+                iconOnly
+              />
+            </div>
             <span
               id={charCountId}
               className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400"
@@ -446,7 +491,8 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
 
       {/* Voice Q&A (task 15.2): feature-detected voice control with a text
           fallback, available once the Results screen has loaded (Req 10.1). */}
-      <VoiceQA sessionId={sessionId} />
+      <VoiceQA sessionId={sessionId} language={result.language} />
     </div>
+    </ReadAloudProvider>
   );
 }

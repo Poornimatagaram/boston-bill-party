@@ -78,6 +78,12 @@ NODE_NAME = "rights_checker"
 # Maximum passages to retrieve per the design/Req 5.1.
 MAX_PASSAGES: int = 10
 
+# Cap on how many rights Findings we keep after thresholding: only the most
+# relevant few are recorded, which trims downstream Skeptic/Writer work. We rank
+# the above-threshold passages by relevance score (descending) and keep the top
+# N; ties break by passage id for a deterministic, reproducible result.
+MAX_RIGHTS_FINDINGS: int = 3
+
 # Retrieval time budget in seconds (Req 5.1). BM25 over a tiny corpus is
 # effectively instantaneous; the budget guards against a pathological/blocked
 # knowledge base so a hang degrades to the "unavailable" branch (Req 5.5).
@@ -285,19 +291,27 @@ def check_rights(
         # Empty retrieval (Req 5.5).
         return [], RightsStatus.UNAVAILABLE
 
-    rights_findings: list[Finding] = []
+    relevant_passages: list[Passage] = []
     for result in results:
         relevance = normalize_score(result.score)
         if not is_relevant(relevance):
             continue  # below threshold -> omit (Req 5.4)
-        passage = Passage(
-            id=result.id,
-            text=result.text,
-            source=result.source,
-            relevance_score=relevance,
+        relevant_passages.append(
+            Passage(
+                id=result.id,
+                text=result.text,
+                source=result.source,
+                relevance_score=relevance,
+            )
         )
-        rights_findings.append(_rights_finding_for(passage))
 
+    # Keep only the most relevant passages: rank by relevance score descending
+    # (ties broken by passage id for determinism) and take the top N. This trims
+    # the number of rights Findings carried into the Skeptic and Writer.
+    relevant_passages.sort(key=lambda p: (-p.relevance_score, p.id))
+    top_passages = relevant_passages[:MAX_RIGHTS_FINDINGS]
+
+    rights_findings = [_rights_finding_for(passage) for passage in top_passages]
     return rights_findings, RightsStatus.COMPLETED
 
 

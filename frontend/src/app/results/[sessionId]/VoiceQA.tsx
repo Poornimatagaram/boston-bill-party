@@ -44,7 +44,16 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ApiError, ask } from "@/lib/api";
+import { ApiError, ask, type SupportedLanguage } from "@/lib/api";
+import ReadAloudButton from "./ReadAloudButton";
+
+/** Map a SupportedLanguage to the BCP-47 tag for speech recognition. */
+const RECOGNITION_LANG: Record<SupportedLanguage, string> = {
+  en: "en-US",
+  es: "es-US",
+  pt: "pt-BR",
+  ht: "ht-HT",
+};
 
 // ---------------------------------------------------------------------------
 // Minimal Web Speech API typings
@@ -189,7 +198,13 @@ function transcriptionErrorMessage(code: string): string {
   }
 }
 
-export default function VoiceQA({ sessionId }: { sessionId: string }) {
+export default function VoiceQA({
+  sessionId,
+  language,
+}: {
+  sessionId: string;
+  language: SupportedLanguage;
+}) {
   const transcriptFieldId = useId();
   const charCountId = useId();
   const answerRegionId = useId();
@@ -281,7 +296,7 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
       return;
     }
 
-    recognition.lang = "en-US";
+    recognition.lang = RECOGNITION_LANG[language] ?? RECOGNITION_LANG.en;
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -360,7 +375,7 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
         setMic({ kind: "no_speech" });
       }
     }, NO_SPEECH_TIMEOUT_MS);
-  }, [clearNoSpeechTimer, stopRecognition]);
+  }, [clearNoSpeechTimer, stopRecognition, language]);
 
   /** Stop listening in response to the user (keeps any transcript). */
   const stopListening = useCallback(() => {
@@ -375,18 +390,6 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
     }
     setMic((prev) => (prev.kind === "listening" ? { kind: "idle" } : prev));
   }, [clearNoSpeechTimer]);
-
-  /** Read an answer aloud where speechSynthesis exists (Req 10.6, best-effort). */
-  const speak = useCallback((text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Reading aloud is best-effort; display already satisfies Req 10.6.
-    }
-  }, []);
 
   const trimmed = question.trim();
   const canSubmit =
@@ -406,11 +409,11 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
     setAskState({ kind: "asking" });
     try {
       const { answer: text } = await ask(sessionId, q);
-      // Display the answer (required) and read it aloud where possible.
+      // Display the answer (required). It can be read aloud via the visible
+      // "Read aloud" control below the answer (Req 10.6).
       setAnswer(text);
       setAskState({ kind: "idle" });
       setQuestion("");
-      speak(text);
     } catch (err) {
       // Answer error/timeout: show the message but KEEP the prior answer
       // visible (Req 10.7).
@@ -422,7 +425,7 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
             : "We couldn't retrieve an answer. Please try again.";
       setAskState({ kind: "error", message });
     }
-  }, [question, sessionId, speak, stopRecognition]);
+  }, [question, sessionId, stopRecognition]);
 
   const onFormSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -563,7 +566,8 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
         ) : null}
       </div>
 
-      {/* Last successful answer — displayed and read aloud (Req 10.6). */}
+      {/* Last successful answer — displayed with line breaks preserved and a
+          visible "Read aloud" control (Req 10.6). */}
       {answer !== null ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -572,10 +576,11 @@ export default function VoiceQA({ sessionId }: { sessionId: string }) {
           <div
             id={answerRegionId}
             aria-live="polite"
-            className="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200"
+            className="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm whitespace-pre-line text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200"
           >
             {answer}
           </div>
+          <ReadAloudButton text={answer} language={language} />
         </div>
       ) : null}
     </section>
