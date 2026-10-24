@@ -8,6 +8,7 @@
  * inside `ResultsView`.
  */
 
+import AppShell from "../../components/AppShell";
 import ResultsView from "./ResultsView";
 
 // Session-keyed route depends on a runtime id; render on request rather than
@@ -22,15 +23,11 @@ export default async function ResultsPage({
   const { sessionId } = await params;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Analysis results</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Session <code className="font-mono">{sessionId}</code>
-        </p>
-      </header>
-
+    <AppShell
+      title="Your results"
+      subtitle="Here’s what our agents found, plus a ready-to-send appeal letter."
+    >
       <ResultsView sessionId={sessionId} />
-    </main>
+    </AppShell>
   );
 }

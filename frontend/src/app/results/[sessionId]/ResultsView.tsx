@@ -74,13 +74,51 @@ function nodeLabel(nodeId: string | null | undefined): string {
   return NODE_LABELS[nodeId] ?? nodeId;
 }
 
-/** Human-readable labels for Finding types shown in the Summary context list. */
-const FINDING_TYPE_LABELS: Record<FindingType, string> = {
-  math_error: "Math error",
-  duplicate_charge: "Duplicate charge",
-  suspicious_code: "Suspicious code",
-  rights_issue: "Patient-rights issue",
+/**
+ * Per-type presentation for the Detected-issue cards: a human label, an icon,
+ * and a color scheme (card tint + accent used for the icon chip and the
+ * confidence bar). Color-coding makes the issue types scannable in the demo.
+ */
+const FINDING_TYPE_META: Record<
+  FindingType,
+  { label: string; icon: string; card: string; chip: string; bar: string }
+> = {
+  math_error: {
+    label: "Math error",
+    icon: "🧮",
+    card: "border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/20",
+    chip: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
+    bar: "bg-amber-500",
+  },
+  duplicate_charge: {
+    label: "Duplicate charge",
+    icon: "📑",
+    card: "border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/20",
+    chip: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
+    bar: "bg-rose-500",
+  },
+  suspicious_code: {
+    label: "Suspicious code",
+    icon: "🔍",
+    card: "border-violet-200 bg-violet-50/70 dark:border-violet-900/50 dark:bg-violet-950/20",
+    chip: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200",
+    bar: "bg-violet-500",
+  },
+  rights_issue: {
+    label: "Patient-rights issue",
+    icon: "⚖️",
+    card: "border-teal-200 bg-teal-50/70 dark:border-teal-800/60 dark:bg-teal-950/20",
+    chip: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-200",
+    bar: "bg-teal-500",
+  },
 };
+
+/** Parse a confidence string in [0,1] into a clamped percentage (0–100). */
+function confidencePct(confidence: string): number {
+  const n = Number.parseFloat(confidence);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n * 100)));
+}
 
 /** A result we can render: Summary (always) + optional letter + findings. */
 interface LoadedResult {
@@ -144,6 +182,9 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
   // Bumped by the Retry action to re-run the load effect without discarding the
   // Summary we already show (the effect seeds state but never clears `letter`).
   const [reloadToken, setReloadToken] = useState(0);
+
+  // Transient "Copied!" acknowledgement for the post-confirm Copy action.
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -252,18 +293,50 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
     }
   }, [sessionId, letter]);
 
+  // Post-confirm convenience actions. None of these transmit anything to the
+  // backend — they only act on the local letter text the user already
+  // confirmed. The mailto link intentionally leaves the recipient blank.
+  const handleCopy = useCallback(async () => {
+    if (!letter) return;
+    try {
+      await navigator.clipboard.writeText(letter);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard may be unavailable (e.g. insecure context); ignore silently.
+    }
+  }, [letter]);
+
+  const handleDownload = useCallback(() => {
+    if (!letter) return;
+    const blob = new Blob([letter], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "appeal-letter.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [letter]);
+
+  // mailto: with the letter in the body and NO recipient filled in.
+  const mailtoHref =
+    letter !== null
+      ? `mailto:?subject=${encodeURIComponent(
+          "Appeal regarding my medical bill",
+        )}&body=${encodeURIComponent(letter)}`
+      : "";
+
   if (load.kind === "loading" || load.kind === "finishing") {
     return (
       <section
         aria-live="polite"
         aria-busy="true"
-        className="flex items-center gap-3 rounded-lg border border-zinc-200 p-6 dark:border-zinc-800"
+        className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-surface p-6 shadow-card"
       >
-        <span
-          aria-hidden="true"
-          className="h-2 w-2 animate-pulse rounded-full bg-blue-500"
-        />
-        <p className="text-base text-zinc-800 dark:text-zinc-200">
+        <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+        <p className="text-base text-navy-800 dark:text-navy-100">
           {load.kind === "finishing"
             ? "Finishing up your analysis…"
             : "Loading your results…"}
@@ -276,12 +349,12 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
     return (
       <section
         role="alert"
-        className="flex flex-col gap-2 rounded-lg border border-red-200 p-6 dark:border-red-900/60"
+        className="flex flex-col gap-2 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-card dark:border-red-900/60 dark:bg-red-950/30"
       >
-        <p className="text-base font-medium text-red-600 dark:text-red-400">
+        <p className="text-base font-semibold text-red-700 dark:text-red-300">
           Results unavailable
         </p>
-        <p className="text-sm text-zinc-700 dark:text-zinc-300">
+        <p className="text-sm text-navy-700 dark:text-navy-200">
           {load.message}
         </p>
       </section>
@@ -292,24 +365,74 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
   // show the failed-node message and a Retry action (Req 8.2).
   const result = load.kind === "loaded" ? load.result : load.partial;
   const isError = load.kind === "error";
+  const issueCount = result.findings.length;
+  const issueBannerText =
+    issueCount === 0
+      ? "No credible issues found"
+      : `${issueCount} issue${issueCount === 1 ? "" : "s"} found`;
 
   return (
     <ReadAloudProvider>
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
+      {/* Top banner: issue count (Req 8.1 presentation). */}
+      <section
+        className={[
+          "flex items-center gap-4 rounded-2xl border p-5 shadow-card",
+          issueCount === 0
+            ? "border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/20"
+            : "border-navy-200 bg-navy-700 text-white dark:border-navy-700",
+        ].join(" ")}
+      >
+        <span
+          aria-hidden="true"
+          className={[
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl",
+            issueCount === 0
+              ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+              : "bg-teal-400 text-navy-900",
+          ].join(" ")}
+        >
+          {issueCount === 0 ? "✅" : "🚩"}
+        </span>
+        <div className="flex flex-col">
+          <p
+            className={[
+              "text-lg font-semibold tracking-tight sm:text-xl",
+              issueCount === 0
+                ? "text-teal-900 dark:text-teal-100"
+                : "text-white",
+            ].join(" ")}
+          >
+            {issueBannerText}
+          </p>
+          <p
+            className={
+              issueCount === 0
+                ? "text-sm text-teal-700 dark:text-teal-200"
+                : "text-sm text-teal-200"
+            }
+          >
+            {issueCount === 0
+              ? "We didn’t find credible billing errors or rights issues."
+              : "Review the details below and send the appeal letter."}
+          </p>
+        </div>
+      </section>
+
       {isError ? (
         <section
           role="alert"
-          className="flex flex-col gap-3 rounded-lg border border-red-200 p-6 dark:border-red-900/60"
+          className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 shadow-card dark:border-red-900/60 dark:bg-red-950/30"
         >
           <div className="flex flex-col gap-1">
-            <p className="text-base font-medium text-red-600 dark:text-red-400">
+            <p className="text-base font-semibold text-red-700 dark:text-red-300">
               Appeal letter couldn’t be generated
             </p>
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            <p className="text-sm text-navy-700 dark:text-navy-200">
               A problem occurred while {nodeLabel(load.error.failedNode)}.
             </p>
             {load.error.message ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-navy-500 dark:text-navy-300">
                 {load.error.message}
               </p>
             ) : null}
@@ -318,23 +441,25 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
             <button
               type="button"
               onClick={handleRetry}
-              className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className="inline-flex items-center justify-center rounded-xl bg-navy-700 px-4 py-2 text-sm font-semibold text-white shadow-card hover:bg-navy-600"
             >
               Retry
             </button>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-navy-500 dark:text-navy-300">
             Your summary below is kept while you retry.
           </p>
         </section>
       ) : null}
 
       {/* Summary — always shown when present (Req 8.1). */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Summary</h2>
+      <section className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-surface p-5 shadow-card sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-navy-900 dark:text-white">
+          Summary
+        </h2>
         {result.summaryEntries.length > 0 ? (
           <>
-            <ul className="flex flex-col gap-2 text-sm text-zinc-800 dark:text-zinc-200">
+            <ul className="flex flex-col gap-2 text-sm text-navy-800 dark:text-navy-100">
               {result.summaryEntries.map((entry, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <ReadAloudButton
@@ -355,46 +480,80 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
             />
           </>
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-navy-500 dark:text-navy-300">
             No summary is available yet.
           </p>
         )}
       </section>
 
-      {/* Findings context (optional, helps explain the summary). */}
+      {/* Findings context — color-coded cards with icons + confidence bars. */}
       {result.findings.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-lg font-semibold tracking-tight text-navy-900 dark:text-white">
             Detected issues
           </h2>
           <ul className="flex flex-col gap-3">
             {result.findings.map((f) => {
-              const typeLabel = FINDING_TYPE_LABELS[f.type] ?? f.type;
+              const meta =
+                FINDING_TYPE_META[f.type] ??
+                ({
+                  label: f.type,
+                  icon: "•",
+                  card: "border-border-subtle bg-surface",
+                  chip: "bg-navy-100 text-navy-700",
+                  bar: "bg-navy-500",
+                } as const);
+              const pct = confidencePct(f.confidence);
               return (
                 <li
                   key={f.id}
-                  className="rounded-md border border-zinc-200 p-4 dark:border-zinc-800"
+                  className={`rounded-2xl border p-4 shadow-card sm:p-5 ${meta.card}`}
                 >
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <ReadAloudButton
                         id={`finding-${f.id}`}
-                        text={`${typeLabel}. ${f.description}`}
+                        text={`${meta.label}. ${f.description}`}
                         language={result.language}
                         label="this issue"
                         iconOnly
                       />
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {typeLabel}
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-sm ${meta.chip}`}
+                      >
+                        {meta.icon}
+                      </span>
+                      <span className="text-sm font-semibold text-navy-900 dark:text-white">
+                        {meta.label}
                       </span>
                     </div>
-                    <span className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-                      confidence {f.confidence}
-                    </span>
                   </div>
-                  <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  <p className="mt-2 text-sm text-navy-700 dark:text-navy-100">
                     {f.description}
                   </p>
+                  {/* Confidence bar. */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-navy-500 dark:text-navy-300">
+                      Confidence
+                    </span>
+                    <div
+                      className="h-2 flex-1 overflow-hidden rounded-full bg-navy-100 dark:bg-navy-800"
+                      role="progressbar"
+                      aria-valuenow={pct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`Confidence ${pct}%`}
+                    >
+                      <div
+                        className={`h-full rounded-full ${meta.bar}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="w-9 text-right font-mono text-xs tabular-nums text-navy-600 dark:text-navy-200">
+                      {pct}%
+                    </span>
+                  </div>
                 </li>
               );
             })}
@@ -405,12 +564,12 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
       {/* Editable Appeal_Letter + explicit confirm gate (Req 8.3–8.7). When the
           Writer produced no letter (Req 7.4) we show nothing to edit/confirm. */}
       {letter !== null && result.appealLetter !== null ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between gap-3">
+        <section className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-surface p-5 shadow-card sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
             <div className="flex items-center gap-2">
               <label
                 htmlFor={letterFieldId}
-                className="text-lg font-semibold tracking-tight"
+                className="text-lg font-semibold tracking-tight text-navy-900 dark:text-white"
               >
                 Appeal letter
               </label>
@@ -424,13 +583,13 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
             </div>
             <span
               id={charCountId}
-              className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400"
+              className="font-mono text-xs text-navy-500 tabular-nums dark:text-navy-300"
             >
               {letter.length.toLocaleString()} /{" "}
               {MAX_LETTER_CHARS.toLocaleString()}
             </span>
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-navy-500 dark:text-navy-300">
             Review and edit this draft. Nothing is sent until you select Confirm.
           </p>
           <textarea
@@ -450,7 +609,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
               );
             }}
             rows={16}
-            className="w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-full resize-y rounded-xl border border-border-subtle bg-canvas px-3 py-2 font-mono text-sm text-navy-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-200 disabled:opacity-60 dark:bg-navy-950 dark:text-navy-50 dark:focus:ring-teal-900"
           />
 
           <div className="flex items-center gap-4">
@@ -459,12 +618,12 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
               onClick={handleConfirm}
               disabled={confirm.kind === "confirming"}
               aria-busy={confirm.kind === "confirming"}
-              className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className="inline-flex items-center justify-center rounded-xl bg-navy-700 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition-colors hover:bg-navy-600 focus:outline-none focus:ring-2 focus:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {confirm.kind === "confirming"
                 ? "Confirming…"
                 : confirm.kind === "confirmed"
-                  ? "Confirmed"
+                  ? "Confirmed ✓"
                   : "Confirm appeal letter"}
             </button>
           </div>
@@ -472,7 +631,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
           {/* Confirm / error status, announced to assistive tech. */}
           <div aria-live="polite" className="min-h-5">
             {confirm.kind === "confirmed" ? (
-              <p className="text-sm text-green-700 dark:text-green-400">
+              <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
                 Your appeal letter has been confirmed and submitted.
               </p>
             ) : confirm.kind === "error" ? (
@@ -481,9 +640,40 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
               </p>
             ) : null}
           </div>
+
+          {/* After Confirm: share actions (all act locally — no transmission). */}
+          {confirm.kind === "confirmed" ? (
+            <div className="flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-950/20">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-2 rounded-xl border border-navy-200 bg-surface px-4 py-2 text-sm font-medium text-navy-800 shadow-card transition-colors hover:bg-navy-50 dark:border-navy-700 dark:text-navy-100 dark:hover:bg-navy-900"
+                >
+                  {copied ? "✓ Copied!" : "📋 Copy letter"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-2 rounded-xl border border-navy-200 bg-surface px-4 py-2 text-sm font-medium text-navy-800 shadow-card transition-colors hover:bg-navy-50 dark:border-navy-700 dark:text-navy-100 dark:hover:bg-navy-900"
+                >
+                  ⬇️ Download as .txt
+                </button>
+                <a
+                  href={mailtoHref}
+                  className="inline-flex items-center gap-2 rounded-xl border border-navy-200 bg-surface px-4 py-2 text-sm font-medium text-navy-800 shadow-card transition-colors hover:bg-navy-50 dark:border-navy-700 dark:text-navy-100 dark:hover:bg-navy-900"
+                >
+                  ✉️ Email draft
+                </a>
+              </div>
+              <p className="text-sm text-teal-800 dark:text-teal-200">
+                Send this to your hospital billing office or insurer.
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : !isError ? (
-        <section className="rounded-lg border border-zinc-200 p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+        <section className="rounded-2xl border border-border-subtle bg-surface p-6 text-sm text-navy-600 shadow-card dark:text-navy-300">
           No credible billing errors or rights issues were detected, so there is
           no appeal letter to review.
         </section>

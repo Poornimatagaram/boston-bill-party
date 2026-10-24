@@ -14,7 +14,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import {
   ApiError,
   createSession,
@@ -22,11 +22,21 @@ import {
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@/lib/api";
+import AppShell from "./components/AppShell";
+
+/** Accept a dropped/selected file only if it looks like a PDF. */
+function isPdf(file: File): boolean {
+  return (
+    file.type === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf")
+  );
+}
 
 export default function UploadPage() {
   const router = useRouter();
   const fileInputId = useId();
   const languageSelectId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   // Records the selected language for the session (Req 1.4); defaults to
@@ -34,6 +44,28 @@ export default function UploadPage() {
   const [language, setLanguage] = useState<SupportedLanguage>(DEFAULT_LANGUAGE);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const pickFile = useCallback((next: File | null) => {
+    setFile(next);
+    setError(null);
+  }, []);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragging(false);
+      if (pending) return;
+      const dropped = e.dataTransfer.files?.[0];
+      if (!dropped) return;
+      if (!isPdf(dropped)) {
+        setError("That doesn’t look like a PDF. Please drop a PDF medical bill.");
+        return;
+      }
+      pickFile(dropped);
+    },
+    [pending, pickFile],
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,40 +89,91 @@ export default function UploadPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Boston Bill Party</h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Upload a medical bill to review it for billing errors and patient-rights
-          issues.
-        </p>
-      </header>
-
+    <AppShell
+      title="Review your medical bill"
+      subtitle="Upload a bill and our agents check it for billing errors and patient-rights issues."
+    >
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-6 rounded-lg border border-zinc-200 p-6 dark:border-zinc-800"
+        className="flex flex-col gap-6 rounded-2xl border border-border-subtle bg-surface p-5 shadow-card sm:p-7"
       >
+        {/* Drag-and-drop PDF dropzone (click to browse too). */}
         <div className="flex flex-col gap-2">
-          <label htmlFor={fileInputId} className="text-sm font-medium">
+          <span className="text-sm font-medium text-navy-700 dark:text-navy-100">
             Medical bill (PDF)
-          </label>
-          <input
-            id={fileInputId}
-            name="pdf"
-            type="file"
-            accept="application/pdf,.pdf"
-            required
-            disabled={pending}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setError(null);
+          </span>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-disabled={pending}
+            onClick={() => !pending && inputRef.current?.click()}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === " ") && !pending) {
+                e.preventDefault();
+                inputRef.current?.click();
+              }
             }}
-            className="block w-full text-sm text-zinc-700 file:mr-4 file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-700 disabled:opacity-50 dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
-          />
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!pending) setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className={[
+              "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+              pending ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+              dragging
+                ? "border-teal-400 bg-teal-50 dark:bg-teal-900/20"
+                : "border-navy-200 bg-navy-50/50 hover:border-teal-300 hover:bg-teal-50/60 dark:border-navy-700 dark:bg-navy-900/30 dark:hover:border-teal-500",
+            ].join(" ")}
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-100 text-2xl text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+            >
+              📄
+            </span>
+            {file ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-navy-900 dark:text-white">
+                  {file.name}
+                </span>
+                <span className="text-xs text-navy-500 dark:text-navy-300">
+                  {(file.size / 1024).toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  KB · click or drop to replace
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-navy-900 dark:text-white">
+                  Drag &amp; drop your PDF here
+                </span>
+                <span className="text-xs text-navy-500 dark:text-navy-300">
+                  or click to browse your files
+                </span>
+              </div>
+            )}
+            <input
+              id={fileInputId}
+              ref={inputRef}
+              name="pdf"
+              type="file"
+              accept="application/pdf,.pdf"
+              required
+              disabled={pending}
+              onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+              className="sr-only"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor={languageSelectId} className="text-sm font-medium">
+          <label
+            htmlFor={languageSelectId}
+            className="text-sm font-medium text-navy-700 dark:text-navy-100"
+          >
             Output language
           </label>
           <select
@@ -99,7 +182,7 @@ export default function UploadPage() {
             value={language}
             disabled={pending}
             onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-full rounded-xl border border-border-subtle bg-surface px-3 py-2.5 text-sm text-navy-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-200 disabled:opacity-50 dark:text-white dark:focus:ring-teal-900"
           >
             {SUPPORTED_LANGUAGES.map(({ value, label }) => (
               <option key={value} value={value}>
@@ -109,8 +192,22 @@ export default function UploadPage() {
           </select>
         </div>
 
+        {/* Synthetic-data notice (Req 12.1/12.2). */}
+        <div className="flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-100">
+          <span aria-hidden="true" className="text-base">
+            🔒
+          </span>
+          <p>
+            <span className="font-semibold">Synthetic data only</span> — no real
+            patient data. Please upload test bills, not real medical records.
+          </p>
+        </div>
+
         {error ? (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+          >
             {error}
           </p>
         ) : null}
@@ -119,11 +216,11 @@ export default function UploadPage() {
           type="submit"
           disabled={!file || pending}
           aria-busy={pending}
-          className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="inline-flex items-center justify-center rounded-xl bg-navy-700 px-5 py-3 text-sm font-semibold text-white shadow-card transition-colors hover:bg-navy-600 focus:outline-none focus:ring-2 focus:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Uploading…" : "Analyze bill"}
         </button>
       </form>
-    </main>
+    </AppShell>
   );
 }

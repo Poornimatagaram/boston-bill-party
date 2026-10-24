@@ -53,9 +53,43 @@ import {
 const INACTIVITY_TIMEOUT_MS = 60_000;
 
 /**
- * Friendly labels for the five conceptual pipeline node ids (Req 9.1). All five
- * can appear in progress payloads, so each is mapped.
+ * The five pipeline agents in canonical order, each with a demo-friendly name
+ * and a one-line description. Drives the vertical stepper and the active-node
+ * label (Req 9.1). Node ids mirror the backend's conceptual node names.
  */
+const AGENT_STEPS: ReadonlyArray<{
+  id: string;
+  name: string;
+  description: string;
+}> = [
+  {
+    id: "extractor",
+    name: "Extractor",
+    description: "Reads your bill and pulls out the line items.",
+  },
+  {
+    id: "auditor",
+    name: "Auditor",
+    description: "Checks the math and looks for duplicate charges.",
+  },
+  {
+    id: "rights_checker",
+    name: "Rights Checker",
+    description: "Reviews the bill against patient-rights rules.",
+  },
+  {
+    id: "skeptic",
+    name: "Skeptic",
+    description: "Double-checks each finding and drops weak ones.",
+  },
+  {
+    id: "writer",
+    name: "Writer",
+    description: "Writes your plain-language summary and appeal letter.",
+  },
+];
+
+/** Friendly labels for the five node ids (for the active-node / error line). */
 const NODE_LABELS: Record<string, string> = {
   extractor: "Reading your bill",
   auditor: "Checking the math and charges",
@@ -234,63 +268,154 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
       : (view.lastProgress ?? INITIAL_PROGRESS);
   const total = progress.total || TOTAL_NODES;
 
+  const completedSet = new Set(progress.completedNodes);
+  const activeId = view.kind === "running" ? progress.activeNode : null;
+  const failedId = view.kind === "error" ? view.error.failedNode : null;
+
+  type StepState = "done" | "active" | "failed" | "pending";
+  const stepState = (id: string): StepState => {
+    if (completedSet.has(id)) return "done";
+    if (id === failedId) return "failed";
+    if (id === activeId) return "active";
+    return "pending";
+  };
+
   return (
     <section
       aria-live="polite"
-      className="flex flex-col gap-6 rounded-lg border border-zinc-200 p-6 dark:border-zinc-800"
+      className="flex flex-col gap-6 rounded-2xl border border-border-subtle bg-surface p-5 shadow-card sm:p-7"
     >
       <div className="flex items-baseline justify-between gap-4">
-        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        <span className="text-sm font-medium text-navy-500 dark:text-navy-200">
           Steps completed
         </span>
         <span
-          className="font-mono text-lg font-semibold tabular-nums"
+          className="font-mono text-lg font-semibold tabular-nums text-navy-800 dark:text-white"
           aria-label={`${progress.completedCount} of ${total} steps completed`}
         >
           {progress.completedCount}/{total}
         </span>
       </div>
 
+      {/* Vertical stepper of the five agents (Req 9.1, 9.3). */}
+      <ol className="flex flex-col">
+        {AGENT_STEPS.map((step, i) => {
+          const state = stepState(step.id);
+          const isLast = i === AGENT_STEPS.length - 1;
+          return (
+            <li key={step.id} className="flex gap-4">
+              {/* Marker + connector rail. */}
+              <div className="flex flex-col items-center">
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
+                    state === "done"
+                      ? "border-teal-500 bg-teal-500 text-white"
+                      : state === "active"
+                        ? "border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-200"
+                        : state === "failed"
+                          ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300"
+                          : "border-navy-200 bg-surface text-navy-400 dark:border-navy-700 dark:text-navy-400",
+                  ].join(" ")}
+                >
+                  {state === "done" ? (
+                    "✓"
+                  ) : state === "active" ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+                  ) : state === "failed" ? (
+                    "!"
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                {!isLast ? (
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "my-1 w-0.5 flex-1",
+                      state === "done"
+                        ? "bg-teal-400"
+                        : "bg-navy-100 dark:bg-navy-700",
+                    ].join(" ")}
+                  />
+                ) : null}
+              </div>
+
+              {/* Step text. */}
+              <div className={isLast ? "pb-0" : "pb-6"}>
+                <div className="flex items-center gap-2">
+                  <p
+                    className={[
+                      "text-sm font-semibold",
+                      state === "pending"
+                        ? "text-navy-400 dark:text-navy-400"
+                        : state === "failed"
+                          ? "text-red-600 dark:text-red-300"
+                          : "text-navy-900 dark:text-white",
+                    ].join(" ")}
+                  >
+                    {step.name}
+                  </p>
+                  {state === "active" ? (
+                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-900/40 dark:text-teal-200">
+                      In progress
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 text-sm text-navy-500 dark:text-navy-300">
+                  {step.description}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Status line / error / interruption, below the stepper. */}
       {view.kind === "running" ? (
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="h-2 w-2 animate-pulse rounded-full bg-blue-500"
-          />
-          <p className="text-base text-zinc-800 dark:text-zinc-200">
-            {nodeLabel(view.progress.activeNode)}…
-          </p>
-        </div>
+        <p className="text-sm text-navy-600 dark:text-navy-200">
+          {nodeLabel(view.progress.activeNode)}…
+        </p>
       ) : view.kind === "error" ? (
-        <div role="alert" className="flex flex-col gap-1">
-          <p className="text-base font-medium text-red-600 dark:text-red-400">
+        <div
+          role="alert"
+          className="flex flex-col gap-1 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/40"
+        >
+          <p className="text-sm font-semibold text-red-700 dark:text-red-300">
             Analysis stopped
           </p>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+          <p className="text-sm text-navy-700 dark:text-navy-200">
             A problem occurred during “{nodeLabel(view.error.failedNode)}”.
           </p>
           {view.error.message ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-navy-500 dark:text-navy-300">
               {view.error.message}
             </p>
           ) : null}
         </div>
       ) : view.kind === "interrupted" ? (
-        <div role="alert" className="flex flex-col gap-1">
-          <p className="text-base font-medium text-amber-600 dark:text-amber-400">
+        <div
+          role="alert"
+          className="flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30"
+        >
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
             The analysis seems to have stalled
           </p>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+          <p className="text-sm text-navy-700 dark:text-navy-200">
             We haven’t received a progress update in a while. The analysis may
             still be running — your progress so far is shown above.
           </p>
         </div>
       ) : (
-        <div role="alert" className="flex flex-col gap-1">
-          <p className="text-base font-medium text-red-600 dark:text-red-400">
+        <div
+          role="alert"
+          className="flex flex-col gap-1 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/40"
+        >
+          <p className="text-sm font-semibold text-red-700 dark:text-red-300">
             Analysis unavailable
           </p>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+          <p className="text-sm text-navy-700 dark:text-navy-200">
             {view.message}
           </p>
         </div>
