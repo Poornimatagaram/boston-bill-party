@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run backend tests on pipeline save",
+      "trigger": "PostFileSave",
+      "description": "Runs the backend pytest suite whenever a file under backend/pipeline is saved.",
+      "matcher": "backend/pipeline/.*\\.py$",
+      "action": {
+        "type": "command",
+        "command": "cd backend && .venv/bin/python -m pytest -q",
+        "timeout": 180
+      }
+    }
+  ]
+}
