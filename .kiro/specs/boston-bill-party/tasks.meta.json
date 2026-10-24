@@ -1,5 +1,18 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "4.2 Write property test for Sum_Check exactness": {
+      "status": "passed",
+      "lastRunTimestamp": 1792867031785
+    },
+    "4.3 Write property test for Sum_Check determinism": {
+      "status": "passed",
+      "lastRunTimestamp": 1792867042622
+    },
+    "5.2 Write property test for duplicate-charge grouping": {
+      "status": "passed",
+      "lastRunTimestamp": 1792867231471
+    }
+  },
   "executionHistory": {
     "1. Set up backend project structure and core data models": [
       {
@@ -11,6 +24,648 @@
         "executionId": "8c327b43-50b1-49f2-b6a5-679c2c571a68",
         "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
         "timestamp": 1792864678951
+      }
+    ],
+    "2.1 Implement `.env` loading and config validation in `config.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501627
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866515170
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866819533
+      }
+    ],
+    "2.2 Implement the `LLMProvider` abstraction and factory in `llm/provider.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501655
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866516571
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866820929
+      }
+    ],
+    "3.1 Implement PDF reading and LLM structuring in `pipeline/extractor.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501694
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866517996
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866821874
+      }
+    ],
+    "4.1 Implement `compute_sum_check(bill) -> SumCheckResult` in `pipeline/sumcheck.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501729
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866832972
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866942308
+      }
+    ],
+    "4.2 Write property test for Sum_Check exactness": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501753
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866955490
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867139457
+      }
+    ],
+    "4.3 Write property test for Sum_Check determinism": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501771
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866958328
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867140900
+      }
+    ],
+    "5.1 Implement billing-error detection in `pipeline/auditor.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501795
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866959477
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867141690
+      }
+    ],
+    "5.2 Write property test for duplicate-charge grouping": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501813
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867152139
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867274765
+      }
+    ],
+    "6.1 Implement Summary and Appeal_Letter generation in `pipeline/writer.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501832
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867152989
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867273895
+      }
+    ],
+    "7.1 Define `PipelineState` and the MVP LangGraph graph": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501852
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867283563
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867487182
+      }
+    ],
+    "7.2 Implement the session registry and background pipeline task in `sessions.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501869
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867491630
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867647813
+      }
+    ],
+    "8.1 Implement `POST /sessions` with upload validation in `main.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501887
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867652446
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867862017
+      }
+    ],
+    "8.2 Implement `GET /sessions/{id}/result`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501906
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867862949
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867982598
+      }
+    ],
+    "9.1 Scaffold the Next.js (App Router) + Tailwind project with API client": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501927
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866518965
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866823079
+      }
+    ],
+    "9.2 Implement the Upload screen": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501944
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866833903
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866941113
+      }
+    ],
+    "10.1 Implement the Progress screen with basic polling/streaming": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501964
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867987837
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868137225
+      }
+    ],
+    "10.2 Implement the Results screen with the editable appeal letter": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866501984
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868143472
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868300284
+      }
+    ],
+    "10.3 Implement `POST /sessions/{id}/confirm` on the backend": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502003
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867988720
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868138075
+      }
+    ],
+    "11. ★ MVP MILESTONE — end-to-end demo works": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502024
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868305765
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868550831
+      }
+    ],
+    "12.1 Implement the BM25 knowledge base in `rag/knowledge_base.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502056
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868556452
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868695352
+      }
+    ],
+    "12.2 Implement `pipeline/rights_checker.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502077
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868699677
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868910971
+      }
+    ],
+    "12.3 Insert Rights_Checker into the pipeline between Auditor and Writer": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502105
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868915567
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869166065
+      }
+    ],
+    "13.1 Implement confidence/evidence filtering in `pipeline/skeptic.py`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502135
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869171068
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869233587
+      }
+    ],
+    "13.2 Insert Skeptic into the pipeline between Rights_Checker and Writer": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502153
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869234989
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869759419
+      }
+    ],
+    "13.3 Write property test for the Skeptic inclusion rule": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502176
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869235870
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869760170
+      }
+    ],
+    "14.1 Implement `GET /sessions/{id}/events` SSE endpoint": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502196
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869769613
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870161156
+      }
+    ],
+    "14.2 Upgrade the Progress screen to consume SSE": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502218
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870169960
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870491000
+      }
+    ],
+    "15.1 Implement `POST /sessions/{id}/ask` on the backend": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502237
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870170947
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870490189
+      }
+    ],
+    "15.2 Implement the Voice_QA control on the Results screen": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502256
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870497103
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870840617
+      }
+    ],
+    "16.1 Implement evaluation data models and the ten-bill Eval_Set": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502277
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869770524
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870162129
+      }
+    ],
+    "16.2 Implement the evaluation harness and `POST /eval/run`": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502294
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870498026
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870841407
+      }
+    ],
+    "17. Final checkpoint — full pipeline and evaluation": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866502316
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870847763
+      },
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792871003960
+      }
+    ],
+    "2. Implement configurable LLM provider": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866820953
+      }
+    ],
+    "3. Implement the Extractor node": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866821913
+      }
+    ],
+    "9. Build the Next.js frontend scaffolding and Upload screen": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792866941153
+      }
+    ],
+    "4. Implement the deterministic Sum_Check": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867140927
+      }
+    ],
+    "6. Implement the Writer node (MVP: no-skeptic path)": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867273921
+      }
+    ],
+    "5. Implement the Auditor node": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867274796
+      }
+    ],
+    "7. Assemble the MVP pipeline and session management": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867647844
+      }
+    ],
+    "8. Implement the minimal backend HTTP API": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792867982635
+      }
+    ],
+    "10. Build the Progress and Results screens (MVP)": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792868300307
+      }
+    ],
+    "12. Add the Rights_Checker node (BM25 RAG)": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869166125
+      }
+    ],
+    "13. Add the Skeptic node": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792869760193
+      }
+    ],
+    "14. Polish live progress with Server-Sent Events": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870491025
+      }
+    ],
+    "15. Add voice Q&A": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870840659
+      }
+    ],
+    "16. Build the synthetic Eval_Set and evaluation harness": [
+      {
+        "executionId": "e754a33d-585a-4713-a4ca-21b89a9bb5b8",
+        "chatSessionId": "sess_1e4615a4-0e72-4477-b02d-7fbc34d37e94",
+        "timestamp": 1792870841446
       }
     ]
   }

@@ -1,0 +1,74 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [4 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 1286 >>
+stream
+BT
+/F1 11 Tf
+15 TL
+1 0 0 1 54 738 Tm
+(*** SYNTHETIC EVALUATION BILL - NOT REAL PATIENT DATA ***) Tj
+T*
+(PROVIDER: South Boston Regional Hospital) Tj
+T*
+(ADDRESS: 1000 W Broadway, Boston, MA 02127) Tj
+T*
+(ACCOUNT: ACCT-0010) Tj
+T*
+(BILL ID: bill_10) Tj
+T*
+(SYNTHETIC: true) Tj
+T*
+(LINE ITEMS:) Tj
+T*
+(LINE L1 | CODE 99283 | Emergency department visit | QTY 2 | UNIT 40.00 | AMT 100.00) Tj
+T*
+(LINE L2 | CODE 36415 | Routine venipuncture | QTY 1 | UNIT 30.00 | AMT 55.00) Tj
+T*
+(LINE L3 | CODE 99213 | Office visit established patient | QTY 1 | UNIT 75.00 | AMT 75.00) Tj
+T*
+(LINE L4 | CODE 99213 | Office visit established patient | QTY 1 | UNIT 75.00 | AMT 75.00) Tj
+T*
+(LINE L5 | CODE 85025 | Complete blood count | QTY 1 | UNIT 45.00 | AMT 45.00) Tj
+T*
+(LINE L6 | CODE 85025 | Complete blood count | QTY 1 | UNIT 45.00 | AMT 45.00) Tj
+T*
+(LINE L7 | CODE XX100 | Unlisted equipment charge | QTY 1 | UNIT 60.00 | AMT 60.00) Tj
+T*
+(LINE L8 | CODE XX200 | Unlisted facility charge | QTY 1 | UNIT 70.00 | AMT 70.00) Tj
+T*
+(LINE L9 | CODE NONE | Processing fee | QTY 1 | UNIT 25.00 | AMT 25.00) Tj
+T*
+(LINE L10 | CODE NONE | Administrative fee | QTY 1 | UNIT 35.00 | AMT 35.00) Tj
+T*
+(LINE L11 | CODE 71046 | Chest X-ray two views | QTY 1 | UNIT 180.00 | AMT -) Tj
+T*
+(TOTAL: 2000.00) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000344 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1682
+%%EOF

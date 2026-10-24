@@ -1,0 +1,201 @@
+{
+  "description": "Synthetic Eval_Set: ten bills with planted billing errors (Req 12). All data is synthetic; no real patient data.",
+  "synthetic": true,
+  "bills": [
+    {
+      "id": "bill_01",
+      "synthetic": true,
+      "pdf_path": "bill_01.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_01-e1",
+          "expected_type": "math_error",
+          "line_item_id": "L1"
+        }
+      ]
+    },
+    {
+      "id": "bill_02",
+      "synthetic": true,
+      "pdf_path": "bill_02.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_02-e1",
+          "expected_type": "math_error"
+        }
+      ]
+    },
+    {
+      "id": "bill_03",
+      "synthetic": true,
+      "pdf_path": "bill_03.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_03-e1",
+          "expected_type": "duplicate_charge",
+          "line_item_id": "L1"
+        }
+      ]
+    },
+    {
+      "id": "bill_04",
+      "synthetic": true,
+      "pdf_path": "bill_04.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_04-e1",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L2"
+        }
+      ]
+    },
+    {
+      "id": "bill_05",
+      "synthetic": true,
+      "pdf_path": "bill_05.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_05-e1",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L2"
+        }
+      ]
+    },
+    {
+      "id": "bill_06",
+      "synthetic": true,
+      "pdf_path": "bill_06.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_06-e1",
+          "expected_type": "math_error"
+        }
+      ]
+    },
+    {
+      "id": "bill_07",
+      "synthetic": true,
+      "pdf_path": "bill_07.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_07-e1",
+          "expected_type": "duplicate_charge",
+          "line_item_id": "L1"
+        },
+        {
+          "id": "bill_07-e2",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L3"
+        }
+      ]
+    },
+    {
+      "id": "bill_08",
+      "synthetic": true,
+      "pdf_path": "bill_08.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_08-e1",
+          "expected_type": "math_error",
+          "line_item_id": "L1"
+        },
+        {
+          "id": "bill_08-e2",
+          "expected_type": "math_error"
+        },
+        {
+          "id": "bill_08-e3",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L2"
+        }
+      ]
+    },
+    {
+      "id": "bill_09",
+      "synthetic": true,
+      "pdf_path": "bill_09.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_09-e1",
+          "expected_type": "math_error",
+          "line_item_id": "L1"
+        },
+        {
+          "id": "bill_09-e2",
+          "expected_type": "duplicate_charge",
+          "line_item_id": "L2"
+        },
+        {
+          "id": "bill_09-e3",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L4"
+        },
+        {
+          "id": "bill_09-e4",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L5"
+        },
+        {
+          "id": "bill_09-e5",
+          "expected_type": "math_error"
+        }
+      ]
+    },
+    {
+      "id": "bill_10",
+      "synthetic": true,
+      "pdf_path": "bill_10.pdf",
+      "planted_errors": [
+        {
+          "id": "bill_10-e1",
+          "expected_type": "math_error",
+          "line_item_id": "L1"
+        },
+        {
+          "id": "bill_10-e2",
+          "expected_type": "math_error",
+          "line_item_id": "L2"
+        },
+        {
+          "id": "bill_10-e3",
+          "expected_type": "duplicate_charge",
+          "line_item_id": "L3"
+        },
+        {
+          "id": "bill_10-e4",
+          "expected_type": "duplicate_charge",
+          "line_item_id": "L5"
+        },
+        {
+          "id": "bill_10-e5",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L7"
+        },
+        {
+          "id": "bill_10-e6",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L8"
+        },
+        {
+          "id": "bill_10-e7",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L9"
+        },
+        {
+          "id": "bill_10-e8",
+          "expected_type": "suspicious_code",
+          "line_item_id": "L10"
+        },
+        {
+          "id": "bill_10-e9",
+          "expected_type": "math_error",
+          "line_item_id": "L11"
+        },
+        {
+          "id": "bill_10-e10",
+          "expected_type": "math_error"
+        }
+      ]
+    }
+  ]
+}
