@@ -12,7 +12,7 @@ Property-based tests use **Hypothesis**. Per the delivery directive, most proper
 
 ## Tasks
 
-- [ ] 1. Set up backend project structure and core data models
+- [x] 1. Set up backend project structure and core data models
   - Create the `backend/` package layout (`main.py`, `config.py`, `sessions.py`, `pipeline/`, `rag/`, `llm/`, `eval/`, `models.py`) and a `pyproject.toml`/`requirements.txt` pinning FastAPI, pdfplumber, pydantic v2, rank-bm25, and hypothesis
   - Implement the Pydantic v2 models in `models.py` with `extra="forbid"`: `SupportedLanguage`, `LineItem`, `ExtractedBill`, `FindingType`, `Finding`, `SumCheckResult`, `RightsStatus`, `Passage`, `AnalysisResult`
   - Use `Decimal` for all monetary fields serialized as two-decimal strings; constrain `confidence` and `relevance_score` to [0,1]

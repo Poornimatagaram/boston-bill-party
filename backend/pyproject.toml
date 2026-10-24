@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "boston-bill-party-backend"
+version = "0.1.0"
+description = "Multi-agent AI patient advocate backend (FastAPI + LangGraph pipeline)"
+readme = "../README.md"
+requires-python = ">=3.11"
+license = { file = "../LICENSE" }
+
+# pydantic >= 2.11 is required for prebuilt wheels on Python 3.14.
+dependencies = [
+    "fastapi==0.162.0",
+    "uvicorn[standard]==0.54.0",
+    "pydantic==2.14.1",
+    "pdfplumber==0.11.10",
+    "rank-bm25==0.2.2",
+    "hypothesis==6.170.9",
+    "python-multipart==0.0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+]
+
+[tool.setuptools]
+packages = [
+    "backend",
+    "backend.pipeline",
+    "backend.rag",
+    "backend.llm",
+    "backend.eval",
+]
+package-dir = { backend = "." }
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["*_test.py", "test_*.py"]
