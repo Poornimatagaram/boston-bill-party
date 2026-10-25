@@ -1,80 +1,36 @@
 """Pipeline assembly: Extractor -> Auditor -> Rights_Checker -> Skeptic -> Writer (Req 2-7).
 
-This module wires the pipeline nodes together, threading a single
-:class:`~pipeline.state.PipelineState` through each node and maintaining the
-per-node :class:`~pipeline.state.NodeStatus` transitions that drive live
-progress (``completed/5``, Req 9).
+The pipeline is a compiled LangGraph ``StateGraph`` whose state schema is
+:class:`~pipeline.state.PipelineState` itself. ``run_pipeline`` keeps its
+pre-migration signature, so ``sessions.py`` and the eval harness are unchanged.
 
-Orchestrator choice — explicit sequential runner vs LangGraph
--------------------------------------------------------------
-The design names LangGraph as the orchestrator. On this project's interpreter
-(Python 3.14) LangGraph *does* resolve, but it drags in a heavy transitive tree
-(langchain-core, langsmith, an alternate httpx, orjson, zstandard, ~25 packages)
-while the pipeline needs none of its advanced features yet: the MVP is a linear
-chain of pure/typed node functions with no branching, concurrency, or
-checkpointing. Per the task guidance, we therefore implement an
-**equivalently-structured explicit sequential runner** with the SAME
-state-threading and the SAME insertion seams.
+Design
+------
+* Five nodes keyed by lowercase :class:`~config.NodeName`, wired
+  ``START -> extractor -> auditor -> rights_checker -> skeptic -> writer -> END``.
+  Each node is a thin wrapper around the unchanged Node_Function(s); bodies run
+  on a deep copy of the state and return the changed fields as a partial update.
+* Node-fatal nodes (Extractor, Auditor, Skeptic, Writer) never raise into
+  LangGraph: an ``ExtractorError``/``WriterError`` becomes
+  ``to_state_error()``, any other exception becomes
+  ``{failedNode, message: str(exc)}``, and the Error_Router (conditional edges)
+  sends the graph to ``END`` whenever ``state.error`` is set (Req 5).
+* The Rights_Checker is node-local: any failure degrades to
+  ``rights_status = UNAVAILABLE``, the node still completes, ``error`` stays
+  ``None``, and a plain edge continues to the Skeptic (Req 6).
+* The provider, knowledge base, PDF source, progress callback, and the
+  caller's live ``PipelineState`` travel in :class:`PipelineContext` via
+  LangGraph runtime context, so none of them ever enter Graph_State (Req 3.8).
+* Progress: each wrapper emits RUNNING before its body and COMPLETED/ERROR after
+  it, synchronously on the calling (worker) thread, after mirroring its update
+  onto the caller's live state. Event order matches the pre-migration runner
+  (Req 7). Callback exceptions are swallowed.
+* The graph is compiled once per process, lazily and lock-guarded, with no
+  checkpointer (Req 4.5). Importing this module builds nothing: no graph, no
+  knowledge base, no provider, no network (Req 4.7).
 
-The runner is shaped so LangGraph can replace it with no change to node
-contracts: each node is a callable ``(state, ...) -> state`` keyed by its
-:class:`~config.NodeName`; the ordered node list is the only thing that changes
-as Rights_Checker (task 12.3) and Skeptic (task 13.2) are inserted — both now
-wired. Swapping in
-``langgraph.graph.StateGraph`` later means registering these same node callables
-as graph nodes and adding edges in this same order — the node functions
-themselves are untouched.
-
-Five-node progress semantics (Req 9)
-------------------------------------
-The pipeline is conceptually five nodes (Extractor, Auditor, Rights_Checker,
-Skeptic, Writer). ``PipelineState.node_status`` is seeded with an entry for all
-five so the SSE ``total:5`` denominator is stable across the MVP and later
-stages. As of task 13.2 all five are REAL nodes: the Rights_Checker (task 12.3)
-and the Skeptic (task 13.2) now genuinely transition RUNNING -> COMPLETED driven
-by their actual node bodies, so a completed run reports ``5/5`` with no node
-left as a pass-through and no change to the denominator.
-
-Node-fatal vs node-local error handling (Req 9.4, 5.5; design "Node-fatal
-propagation" and "Error Handling by Node")
---------------------------------------------------------------------
-Extractor and Writer raise typed, node-fatal errors (``ExtractorError`` /
-``WriterError``), each exposing ``to_state_error() -> {failedNode, message}``.
-When such a node raises, the runner records ``state.error``, marks that node
-:data:`NodeStatus.ERROR`, invokes the optional progress callback, and STOPS —
-later nodes do not run. The Auditor is a pure function and is not expected to
-raise for normal inputs; a defensive catch still converts an unexpected auditor
-exception into the same node-fatal shape rather than crashing the background
-task.
-
-The Rights_Checker, by contrast, is NODE-LOCAL (Req 5.5): a retrieval failure,
-empty result, or timeout must NOT stop the pipeline. ``run_rights_checker``
-already absorbs those internally (it sets ``rights_status = UNAVAILABLE`` and
-preserves the auditor Findings), so the node is wired via a dedicated
-:func:`_run_node_local` wrapper that marks it RUNNING then COMPLETED and, should
-``run_rights_checker`` itself raise unexpectedly, degrades gracefully to the
-"unavailable" outcome WITHOUT setting ``state.error`` or halting. It is never
-routed through the node-fatal path that Extractor/Writer use. The node always
-reports COMPLETED (it completes even when the rights check is "unavailable"), so
-the five-node progress still advances.
-
-Knowledge base lifetime (build once; lazy; injectable)
-------------------------------------------------------
-The Rights_Checker needs a :class:`~rag.knowledge_base.KnowledgeBase`. Building
-it loads and indexes the corpus, so it must be built ONCE and reused — never per
-request, and never at import time (keeping ``import graph`` cheap and free of
-corpus/network access). ``run_pipeline`` therefore accepts an optional ``kb``
-parameter: when ``None`` it lazily builds (first call) and reuses a shared
-module-level singleton via :func:`_get_knowledge_base`. Tests inject a stub ``kb``
-(e.g. one whose ``search`` raises) to exercise the node-local degrade path
-without touching the real corpus.
-
-Progress callback (SSE seam, Req 9.2)
--------------------------------------
-``run_pipeline`` accepts an optional ``progress`` callback invoked on every node
-status transition (start and completion/error). Task 7.2's background task and
-the later SSE endpoint (task 14.1) use it to emit ``progress`` / ``node_error``
-events without this module importing any transport code.
+The frozen pre-migration sequential runner lives in
+``pipeline/_reference_runner.py`` and is used only by the equivalence tests.
 
 Security note: the LLM API key is never read, logged, or stored here. The
 injected ``provider`` holds the key; node error messages come from the node's
@@ -83,7 +39,13 @@ own ``to_state_error()`` and never include credentials.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol
+import copy
+import threading
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Protocol
+
+from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import Runtime
 
 from config import NodeName
 from models import RightsStatus
@@ -96,6 +58,8 @@ from pipeline.sumcheck import compute_sum_check
 from pipeline.writer import WriterError, write_analysis
 
 if TYPE_CHECKING:  # import only for typing; never at runtime (keeps import cheap)
+    from langgraph.graph.state import CompiledStateGraph
+
     from rag.knowledge_base import KnowledgeBase
 
 # Canonical ordering of the five conceptual nodes. Progress denominators and the
@@ -135,6 +99,9 @@ ProgressCallback = Callable[[str, NodeStatus, PipelineState], None]
 # intentionally NOT built at import time so ``import graph`` stays cheap and does
 # no corpus/network access; ``_get_knowledge_base`` constructs it on demand.
 _KNOWLEDGE_BASE: Optional["KnowledgeBase"] = None
+# Guards the first-call build so two worker threads racing on the first run
+# cannot construct the KB twice (double-checked init).
+_KNOWLEDGE_BASE_LOCK = threading.Lock()
 
 
 def _get_knowledge_base() -> "KnowledgeBase":
@@ -149,10 +116,113 @@ def _get_knowledge_base() -> "KnowledgeBase":
     """
     global _KNOWLEDGE_BASE
     if _KNOWLEDGE_BASE is None:
-        from rag.knowledge_base import KnowledgeBase
+        with _KNOWLEDGE_BASE_LOCK:
+            if _KNOWLEDGE_BASE is None:
+                from rag.knowledge_base import KnowledgeBase
 
-        _KNOWLEDGE_BASE = KnowledgeBase()
+                _KNOWLEDGE_BASE = KnowledgeBase()
     return _KNOWLEDGE_BASE
+
+
+# ---------------------------------------------------------------------------
+# LangGraph migration helpers (runtime context, state conversion, updates).
+#
+# Building blocks used by the node wrappers and ``run_pipeline``. They are
+# plain Python (no LangGraph calls), and nothing in this module imports
+# ``langgraph.checkpoint``.
+# ---------------------------------------------------------------------------
+
+# The 11 Graph_State fields, in declaration order. Graph_State is
+# ``PipelineState`` itself (design decision 1), so this is the single source of
+# truth for which keys may cross the graph boundary (Req 2.1).
+_STATE_FIELDS: tuple[str, ...] = tuple(PipelineState.model_fields)
+
+
+@dataclass(frozen=True)
+class PipelineContext:
+    """Per-run dependencies injected via LangGraph runtime context.
+
+    Passed as ``graph.invoke(..., context=PipelineContext(...))`` and declared as
+    the graph's ``context_schema``. It is never part of Graph_State and never
+    checkpointed, so the provider (which holds the API key) and the knowledge
+    base never enter the state (Req 3.8).
+
+    ``live_state`` is the caller's own ``PipelineState`` instance. Node wrappers
+    mirror each update onto it so ``Session.progress`` and the Progress_Callback
+    see live status while the graph runs.
+    """
+
+    provider: LLMProvider
+    kb: "KnowledgeBase"
+    pdf_source: Any
+    live_state: PipelineState
+    progress: Optional[ProgressCallback]
+
+
+def to_graph_input(state: PipelineState) -> dict[str, Any]:
+    """Return the graph input for ``state``: exactly the 11 fields, deep-copied.
+
+    Deep copies keep the graph's working values independent of the caller's
+    instance, so nothing the graph does can alias into the caller except through
+    the explicit mirroring in :func:`_apply_update`. ``Decimal`` values keep
+    their value and scale under ``deepcopy`` (Req 2.5).
+    """
+    return {name: copy.deepcopy(getattr(state, name)) for name in _STATE_FIELDS}
+
+
+def from_graph_state(
+    values: Mapping[str, Any], caller: Optional[PipelineState] = None
+) -> PipelineState:
+    """Convert final Graph_State ``values`` into a validated ``PipelineState``.
+
+    LangGraph may omit keys that were never written (fields left at a ``None``
+    default). Omitted keys are filled from ``caller`` (deep-copied) when given,
+    otherwise from the ``PipelineState`` defaults. Unknown keys are passed
+    through to validation so ``extra="forbid"`` rejects them, and validation is
+    strict (no type coercion, so no ``float`` sneaks in for money).
+
+    Raises:
+        pydantic.ValidationError: for an unknown key or a value of the wrong
+            type (Req 2.7). ``caller`` is only read, never modified, so a
+            failed conversion leaves the caller's instance unchanged.
+    """
+    merged: dict[str, Any] = {}
+    if caller is not None:
+        for name in _STATE_FIELDS:
+            if name not in values:
+                merged[name] = copy.deepcopy(getattr(caller, name))
+    merged.update(values)
+    return PipelineState.model_validate(merged, strict=True)
+
+
+def _diff(before: PipelineState, after: PipelineState) -> dict[str, Any]:
+    """Return ``{field: value}`` for fields whose value changed (by ``==``).
+
+    ``after`` is the node's private deep-copied working state, so its values can
+    be returned directly without aliasing the graph's previous state. Partial
+    writes made before a node failure are captured too (design decision 3).
+    """
+    return {
+        name: getattr(after, name)
+        for name in _STATE_FIELDS
+        if getattr(before, name) != getattr(after, name)
+    }
+
+
+def _apply_update(live: PipelineState, update: Mapping[str, Any]) -> None:
+    """Validate ``update`` against ``PipelineState``, then ``setattr`` onto ``live``.
+
+    The candidate (``live``'s current fields overlaid by ``update``) is fully
+    validated first, so an unknown key or wrongly-typed value raises
+    ``pydantic.ValidationError`` before any attribute on ``live`` changes.
+    Validated values are then assigned field by field, preserving ``live``'s
+    object identity.
+    """
+    candidate = {name: getattr(live, name) for name in _STATE_FIELDS}
+    candidate.update(update)
+    validated = PipelineState.model_validate(candidate, strict=True)
+    for name in update:
+        setattr(live, name, getattr(validated, name))
 
 
 def _emit(
@@ -183,160 +253,228 @@ def _seed_node_status(state: PipelineState) -> None:
         state.node_status.setdefault(node.value, NodeStatus.PENDING)
 
 
-def _run_extractor(
-    state: PipelineState, provider: LLMProvider, pdf_source: Any
-) -> None:
-    """Extractor node: PDF -> raw_text + ExtractedBill (Req 2).
+# ---------------------------------------------------------------------------
+# LangGraph node bodies and wrappers (task 3.4).
+#
+# Each body runs against the wrapper's private deep-copied working state and
+# makes the same calls, in the same order, as the pre-migration ``_run_*``
+# helper (see ``pipeline/_reference_runner.py``). Node_Functions are looked up through this module's globals at call
+# time, so tests that monkeypatch ``pipeline.graph.audit`` etc. take effect.
+# ---------------------------------------------------------------------------
 
-    Populates ``state.raw_text`` and ``state.bill``. ``extract_bill`` reads the
-    PDF and structures it; ``read_pdf_text`` is called again here only to record
-    the raw text on the state for later inspection/debugging without changing
-    the extractor's contract.
-    """
+NodeBody = Callable[[PipelineState, PipelineContext], None]
+GraphNode = Callable[[PipelineState, "Runtime[PipelineContext]"], dict[str, Any]]
+
+
+def _extractor_body(w: PipelineState, ctx: PipelineContext) -> None:
+    """Extractor: ``raw_text = read_pdf_text(pdf)`` then ``bill = extract_bill(...)`` (Req 3.9)."""
+    # Module-attribute lookup at call time, as in the pre-migration runner, so
+    # ``monkeypatch.setattr(extractor_mod, "read_pdf_text", ...)`` still applies.
     from pipeline.extractor import read_pdf_text
 
-    # Record raw text first so it is available even if structuring fails. Reading
-    # the PDF cannot raise the node-fatal ExtractorError by itself (that is
-    # raised for empty text inside extract_bill), so this stays inside the node's
-    # error boundary in _run_node.
-    state.raw_text = read_pdf_text(pdf_source)
-    state.bill = extract_bill(pdf_source, provider)
+    w.raw_text = read_pdf_text(ctx.pdf_source)
+    w.bill = extract_bill(ctx.pdf_source, ctx.provider)
 
 
-def _run_auditor(state: PipelineState, provider: LLMProvider) -> None:
-    """Auditor node: compute Sum_Check then audit (Req 3, 4).
+def _auditor_body(w: PipelineState, ctx: PipelineContext) -> None:
+    """Auditor: Sum_Check first, then audit; seed a distinct retained list (Req 3.3, 3.6).
 
-    Per the design, the Sum_Check is invoked at the START of the Auditor node.
-    The Auditor is pure and takes no provider. Results land in
-    ``state.sum_check`` and ``state.findings``. ``retained_findings`` is seeded
-    here from the auditor findings as a PROVISIONAL value so the state is
-    coherent if a later node is skipped; it is NOT authoritative. The
-    Rights_Checker then APPENDS rights Findings to ``state.findings``, and the
-    Skeptic node (task 13.2) is the sole authority that computes the final
-    ``retained_findings = apply_skeptic(state.findings)`` the Writer consumes.
+    Pure: never touches ``ctx.provider``.
     """
-    assert state.bill is not None  # Extractor ran first and succeeded.
-    state.sum_check = compute_sum_check(state.bill)
-    state.findings = audit(state.bill, state.sum_check)
-    # Provisional seed only; the Skeptic node owns the final retained_findings.
-    state.retained_findings = list(state.findings)
+    assert w.bill is not None  # Extractor ran first and succeeded.
+    w.sum_check = compute_sum_check(w.bill)
+    w.findings = audit(w.bill, w.sum_check)
+    w.retained_findings = list(w.findings)
 
 
-def _run_rights_checker(state: PipelineState, kb: "KnowledgeBase") -> None:
-    """Rights_Checker node: append rights Findings via BM25 RAG (Req 5).
+def _rights_checker_body(w: PipelineState, ctx: PipelineContext) -> None:
+    """Rights_Checker: ``run_rights_checker(w, kb)`` exactly once (Req 3.10)."""
+    run_rights_checker(w, ctx.kb)
 
-    Delegates to :func:`~pipeline.rights_checker.run_rights_checker`, which
-    builds a query from the bill + auditor Findings, retrieves reference passages
-    from ``kb`` within the 15s budget, and APPENDS any rights-issue Findings to
-    ``state.findings`` while setting ``state.rights_status`` (COMPLETED, or
-    UNAVAILABLE on failure/empty/timeout — Req 5.5). The auditor Findings are
-    preserved.
 
-    This node does NOT touch ``retained_findings``: the Skeptic node (task 13.2)
-    is the sole authority on that field and computes it from the full
-    (auditor + rights) ``state.findings`` immediately after this node runs. The
-    provisional seed from the Auditor remains until the Skeptic overwrites it.
+def _skeptic_body(w: PipelineState, ctx: PipelineContext) -> None:
+    """Skeptic: ``retained_findings = apply_skeptic(findings)`` (Req 3.4, 3.6).
 
-    This body is intentionally safe to run under :func:`_run_node_local`: it does
-    not raise for the ordinary unavailable case (``run_rights_checker`` absorbs
-    it), and any unexpected exception is converted to the unavailable outcome by
-    the wrapper rather than halting the pipeline.
+    Pure: never touches ``ctx.provider`` and leaves ``findings`` unchanged.
     """
-    run_rights_checker(state, kb)
+    w.retained_findings = apply_skeptic(w.findings)
 
 
-def _run_skeptic(state: PipelineState) -> None:
-    """Skeptic node: filter ``findings`` into ``retained_findings`` (Req 6).
+def _writer_body(w: PipelineState, ctx: PipelineContext) -> None:
+    """Writer: ``write_analysis`` exactly once with the retained findings (Req 3.5)."""
+    w.result = write_analysis(w.retained_findings, w.language, ctx.provider)
 
-    The Skeptic is the SOLE authority on ``state.retained_findings``. It applies
-    the pure :func:`~pipeline.skeptic.apply_skeptic` filter to the full
-    (auditor + rights) ``state.findings`` and overwrites ``retained_findings``
-    with the retained subset — dropping Findings below the 0.5 confidence bar or
-    carrying zero line-item AND zero passage references (Req 6.2–6.5). The result
-    is order-preserving and may be a strict subset of ``findings`` (e.g. a
-    bill-total mismatch math-error, which carries no line-item/passage refs, is
-    correctly dropped per Req 6.3).
 
-    It calls no LLM, performs no I/O, and never mutates its inputs, so for the
-    validated Findings produced upstream it does not raise for ordinary data.
-    Running it through the normal :func:`_run_node` lifecycle is acceptable: an
-    unexpected exception would be converted to the node-fatal shape, but a pure
-    filter over already-validated Findings essentially never raises. Keeping it
-    on :func:`_run_node` keeps the runner uniform (RUNNING -> COMPLETED) and the
-    five-node progress genuine.
+def _finish_node(
+    node: NodeName,
+    state: PipelineState,
+    working: PipelineState,
+    status: NodeStatus,
+    error: Optional[dict[str, Any]],
+    ctx: PipelineContext,
+) -> dict[str, Any]:
+    """Build the node's update, mirror it onto ``live_state``, then emit ``status``.
+
+    The diff keeps partial writes made before a failure (design decision 3).
+    Mirroring happens before the final emit so the Progress_Callback sees the
+    node's writes on the caller's instance, as with the pre-migration runner.
     """
-    state.retained_findings = apply_skeptic(state.findings)
+    update = _diff(state, working)
+    update["node_status"] = {**state.node_status, node.value: status}
+    if error is not None:
+        update["error"] = error
+    _apply_update(ctx.live_state, update)
+    _emit(ctx.progress, node, status, ctx.live_state)
+    return update
 
 
-def _run_writer(state: PipelineState, provider: LLMProvider) -> None:
-    """Writer node: Summary + Appeal_Letter in the session language (Req 7).
+def _fatal_node(node: NodeName, body: NodeBody) -> GraphNode:
+    """Build a node-fatal wrapper (extractor, auditor, skeptic, writer).
 
-    Consumes ``retained_findings`` — the Skeptic-filtered subset of
-    ``findings`` — and produces ``state.result`` with one summary entry per
-    retained Finding (Req 7.1).
+    Lifecycle: emit RUNNING on the live state, run ``body`` on a deep copy, map
+    ``ExtractorError``/``WriterError`` to ``to_state_error()`` and any other
+    exception to ``{failedNode, message: str(exc)}`` (Req 5.1-5.3), mirror the
+    update onto the live state, emit the final status, and return the update.
+    Body exceptions never escape, so LangGraph never sees them (Req 5.7).
     """
-    state.result = write_analysis(
-        state.retained_findings, state.language, provider
+
+    def wrapper(
+        state: PipelineState, runtime: "Runtime[PipelineContext]"
+    ) -> dict[str, Any]:
+        ctx = runtime.context
+        _emit(ctx.progress, node, NodeStatus.RUNNING, ctx.live_state)  # Req 7.1
+        working = state.model_copy(deep=True)
+        working.node_status[node.value] = NodeStatus.RUNNING
+        error: Optional[dict[str, Any]] = None
+        try:
+            body(working, ctx)
+            status = NodeStatus.COMPLETED
+        except (ExtractorError, WriterError) as exc:
+            status, error = NodeStatus.ERROR, exc.to_state_error()
+        except Exception as exc:  # defensive: unexpected failure in any node
+            status = NodeStatus.ERROR
+            error = {"failedNode": node.value, "message": str(exc)}
+        return _finish_node(node, state, working, status, error, ctx)
+
+    wrapper.__name__ = f"{node.value}_node"
+    wrapper.__qualname__ = wrapper.__name__
+    return wrapper
+
+
+def _local_node(node: NodeName, body: NodeBody) -> GraphNode:
+    """Build the node-local wrapper (rights_checker, Req 6.1, 6.2, 7.4).
+
+    Same lifecycle as :func:`_fatal_node`, except any body exception degrades to
+    ``rights_status = UNAVAILABLE``; the final status is always COMPLETED and
+    ``error`` is never written. Partial appends made before the exception are
+    kept, matching the pre-migration runner.
+    """
+
+    def wrapper(
+        state: PipelineState, runtime: "Runtime[PipelineContext]"
+    ) -> dict[str, Any]:
+        ctx = runtime.context
+        _emit(ctx.progress, node, NodeStatus.RUNNING, ctx.live_state)
+        working = state.model_copy(deep=True)
+        working.node_status[node.value] = NodeStatus.RUNNING
+        try:
+            body(working, ctx)
+        except Exception:  # node-local: degrade to unavailable, never halt
+            working.rights_status = RightsStatus.UNAVAILABLE
+        return _finish_node(node, state, working, NodeStatus.COMPLETED, None, ctx)
+
+    wrapper.__name__ = f"{node.value}_node"
+    wrapper.__qualname__ = wrapper.__name__
+    return wrapper
+
+
+# The five graph node callables keyed by NodeName, in NODE_ORDER (task 3.5 wires them).
+_NODE_WRAPPERS: dict[NodeName, GraphNode] = {
+    NodeName.EXTRACTOR: _fatal_node(NodeName.EXTRACTOR, _extractor_body),
+    NodeName.AUDITOR: _fatal_node(NodeName.AUDITOR, _auditor_body),
+    NodeName.RIGHTS_CHECKER: _local_node(NodeName.RIGHTS_CHECKER, _rights_checker_body),
+    NodeName.SKEPTIC: _fatal_node(NodeName.SKEPTIC, _skeptic_body),
+    NodeName.WRITER: _fatal_node(NodeName.WRITER, _writer_body),
+}
+
+
+# ---------------------------------------------------------------------------
+# Graph topology, Error_Router, and compile-once accessor (task 3.5).
+#
+# Nothing here runs at import time: the builder and the compiled graph are
+# created on the first ``get_compiled_graph()`` call (Req 4.5, 4.7). The default
+# graph has no checkpointer, and this module never imports ``langgraph.checkpoint``.
+# ---------------------------------------------------------------------------
+
+
+def _route_after(node: NodeName) -> Callable[[PipelineState], str]:
+    """Return the Error_Router for ``node`` (Req 5.4-5.6).
+
+    The router sends the graph to ``END`` when ``state.error`` is set (a
+    node-fatal failure), otherwise to the next node in ``NODE_ORDER`` (or
+    ``END`` after the last node). It is a pure function of ``state.error``.
+    """
+    index = NODE_ORDER.index(node)
+    successor = NODE_ORDER[index + 1].value if index + 1 < len(NODE_ORDER) else END
+
+    def route(state: PipelineState) -> str:
+        return END if state.error is not None else successor
+
+    route.__name__ = f"route_after_{node.value}"
+    route.__qualname__ = route.__name__
+    return route
+
+
+def _build_graph() -> StateGraph:
+    """Build the (uncompiled) Pipeline_Graph builder (Req 3.1, 4.1-4.4).
+
+    Five nodes keyed by lowercase ``NodeName``; ``START -> extractor``; the
+    Error_Router on every node-fatal node; a plain ``rights_checker -> skeptic``
+    edge because the Rights_Checker is node-local and never fatal (Req 5.9).
+    """
+    builder = StateGraph(PipelineState, context_schema=PipelineContext)
+    for node in NODE_ORDER:
+        builder.add_node(node.value, _NODE_WRAPPERS[node])
+
+    builder.add_edge(START, NodeName.EXTRACTOR.value)
+    for node, nxt in (
+        (NodeName.EXTRACTOR, NodeName.AUDITOR),
+        (NodeName.AUDITOR, NodeName.RIGHTS_CHECKER),
+        (NodeName.SKEPTIC, NodeName.WRITER),
+    ):
+        builder.add_conditional_edges(
+            node.value, _route_after(node), {nxt.value: nxt.value, END: END}
+        )
+    builder.add_edge(NodeName.RIGHTS_CHECKER.value, NodeName.SKEPTIC.value)
+    # Both writer outcomes end the run; routing still goes through the
+    # Error_Router so Req 5.2 holds literally.
+    builder.add_conditional_edges(
+        NodeName.WRITER.value, _route_after(NodeName.WRITER), {END: END}
     )
+    return builder
 
 
-def _run_node(
-    node: NodeName,
-    body: Callable[[], None],
-    state: PipelineState,
-    progress: Optional[ProgressCallback],
-) -> bool:
-    """Run one node body under the shared status/error lifecycle.
+# Compiled default graph, built lazily on first use and shared process-wide.
+_COMPILED: Optional["CompiledStateGraph"] = None
+_COMPILED_LOCK = threading.Lock()
 
-    Marks the node RUNNING, runs ``body``, then marks COMPLETED. On a node-fatal
-    error (a node exception exposing ``to_state_error()``, or any unexpected
-    exception) it records ``state.error = {failedNode, message}``, marks the node
-    ERROR, and returns ``False`` so the runner halts (Req 9.4). Returns ``True``
-    on success.
+
+def get_compiled_graph() -> "CompiledStateGraph":
+    """Return the default compiled Pipeline_Graph, compiling it once (Req 4.5).
+
+    Double-checked locking so concurrent first calls from worker threads compile
+    exactly once. No checkpointer: all per-run data lives in the ``invoke``
+    input and the ``PipelineContext``, so concurrent runs share no mutable state
+    (Req 4.6).
     """
-    _emit(progress, node, NodeStatus.RUNNING, state)
-    try:
-        body()
-    except (ExtractorError, WriterError) as exc:
-        # Typed node-fatal error: use the node's own {failedNode, message} shape.
-        state.error = exc.to_state_error()
-        _emit(progress, node, NodeStatus.ERROR, state)
-        return False
-    except Exception as exc:  # defensive: unexpected failure in any node
-        state.error = {"failedNode": node.value, "message": str(exc)}
-        _emit(progress, node, NodeStatus.ERROR, state)
-        return False
-    _emit(progress, node, NodeStatus.COMPLETED, state)
-    return True
+    global _COMPILED
+    if _COMPILED is None:
+        with _COMPILED_LOCK:
+            if _COMPILED is None:
+                _COMPILED = _build_graph().compile()
+    return _COMPILED
 
 
-def _run_node_local(
-    node: NodeName,
-    body: Callable[[], None],
-    state: PipelineState,
-    progress: Optional[ProgressCallback],
-) -> None:
-    """Run a NODE-LOCAL node body: never halt, never set ``state.error`` (Req 5.5).
-
-    Used for the Rights_Checker, whose failures are node-local by design: the
-    pipeline must keep flowing to the Writer even when the rights check is
-    unavailable. Marks the node RUNNING then COMPLETED. If ``body`` raises
-    unexpectedly (``run_rights_checker`` already absorbs the ordinary
-    failure/empty/timeout cases internally), the exception is caught and
-    converted to the "unavailable" outcome — ``state.rights_status`` is set to
-    :data:`RightsStatus.UNAVAILABLE` and the node is still marked COMPLETED — so
-    the pipeline continues. This deliberately does NOT use the node-fatal path
-    (``_run_node``) that records ``state.error`` and stops the runner.
-
-    Unlike :func:`_run_node`, this returns ``None``: a node-local node never
-    signals "halt", so the caller never branches on its outcome.
-    """
-    _emit(progress, node, NodeStatus.RUNNING, state)
-    try:
-        body()
-    except Exception:  # node-local: degrade to unavailable, never halt (Req 5.5)
-        state.rights_status = RightsStatus.UNAVAILABLE
-    _emit(progress, node, NodeStatus.COMPLETED, state)
 
 
 def run_pipeline(
@@ -346,96 +484,50 @@ def run_pipeline(
     progress: Optional[ProgressCallback] = None,
     kb: Optional["KnowledgeBase"] = None,
 ) -> PipelineState:
-    """Run the pipeline end to end, mutating and returning ``state``.
+    """Run the pipeline end to end on the compiled graph, returning ``state``.
 
-    Threads ``state`` through Extractor -> Auditor -> Rights_Checker -> Skeptic
-    -> Writer in order, keeping ``node_status`` current for all five conceptual
-    nodes and surfacing progress via the optional ``progress`` callback. The
-    pipeline halts on the first node-fatal error (Extractor/Writer), leaving
-    ``state.error`` and the completed-node statuses intact so the frontend can
-    show the failing node while retaining prior progress (Req 9.4). The
-    Rights_Checker is node-local (Req 5.5): it never halts the pipeline and never
-    sets ``state.error`` — a failure degrades to ``rights_status = UNAVAILABLE``
-    and the Writer still runs.
+    Seeds ``node_status`` (all five PENDING), resolves the knowledge base, then
+    invokes the compiled Pipeline_Graph with the provider, KB, PDF source,
+    progress callback, and ``state`` (as the live instance) injected through
+    :class:`PipelineContext`. Node wrappers mirror every update onto ``state``
+    and fire ``progress`` synchronously on this thread, so live progress works
+    as before (Req 7.1-7.5).
 
-    Retained-findings ownership: the Skeptic node is the SOLE authority on
-    ``state.retained_findings``. The Auditor seeds a provisional value and the
-    Rights_Checker appends to ``state.findings`` without touching it; the Skeptic
-    then overwrites ``retained_findings = apply_skeptic(state.findings)`` (the
-    confident, evidenced subset), and the Writer consumes that filtered set
-    (Req 6, 7.1).
+    A node-fatal failure ends the run at that node with ``state.error`` set; it
+    is never raised to the caller (Req 5.7). A Rights_Checker failure degrades to
+    ``rights_status = UNAVAILABLE`` and the run continues (Req 6).
 
     Args:
         state: The session's pipeline state (session_id/language already set).
         provider: The injected LLM provider (holds credentials; never read here).
         pdf_source: Anything ``pdfplumber.open`` accepts (path or binary stream).
         progress: Optional callback fired on every node status transition.
-        kb: Optional BM25 knowledge base for the Rights_Checker. When ``None``,
-            the shared, lazily-built singleton (:func:`_get_knowledge_base`) is
-            used so the corpus is indexed once and reused. Tests inject a stub
-            (e.g. one whose ``search`` raises) to drive the node-local degrade
-            path without the real corpus.
+        kb: Optional knowledge base for the Rights_Checker. When ``None``, the
+            shared lazily-built singleton (:func:`_get_knowledge_base`) is used.
+            It is resolved before the graph runs, so a KB build failure raises
+            here (outside any node) and the Session_Bridge reports it (Req 7.9).
 
     Returns:
-        The same ``state`` instance, now populated (or carrying ``error``).
+        The same ``state`` instance (identity preserved, Req 2.3, 2.6), with all
+        11 fields set to the final Graph_State values.
+
+    Raises:
+        pydantic.ValidationError: if the final Graph_State fails validation; the
+            caller's fields are then left as the wrappers last mirrored them,
+            untouched by the failed conversion (Req 2.7).
     """
     _seed_node_status(state)
-
-    # --- Extractor -------------------------------------------------------
-    if not _run_node(
-        NodeName.EXTRACTOR,
-        lambda: _run_extractor(state, provider, pdf_source),
-        state,
-        progress,
-    ):
-        return state
-
-    # --- Auditor (Sum_Check runs at the start of this node) --------------
-    if not _run_node(
-        NodeName.AUDITOR,
-        lambda: _run_auditor(state, provider),
-        state,
-        progress,
-    ):
-        return state
-
-    # --- Rights_Checker (task 12.3) --------------------------------------
-    # Node-local (Req 5.5): a retrieval failure/empty/timeout must NOT halt the
-    # pipeline. ``run_rights_checker`` absorbs those internally (unavailable
-    # status, auditor Findings preserved); ``_run_node_local`` additionally
-    # degrades any unexpected exception to the unavailable outcome without
-    # setting ``state.error``. The KB is built once and reused (or injected).
     resolved_kb = kb if kb is not None else _get_knowledge_base()
-    _run_node_local(
-        NodeName.RIGHTS_CHECKER,
-        lambda: _run_rights_checker(state, resolved_kb),
-        state,
-        progress,
+    ctx = PipelineContext(
+        provider=provider,
+        kb=resolved_kb,
+        pdf_source=pdf_source,
+        live_state=state,
+        progress=progress,
     )
-
-    # --- Skeptic (task 13.2) ---------------------------------------------
-    # The Skeptic is the sole authority on ``retained_findings``: it filters the
-    # full (auditor + rights) ``findings`` down to the confident, evidenced
-    # subset the Writer consumes (Req 6). It is a pure filter (no LLM, no I/O),
-    # so running it on the normal node lifecycle (RUNNING -> COMPLETED) is safe —
-    # it does not raise for the validated Findings produced upstream. If it ever
-    # did, ``_run_node`` would surface it as a node-fatal error rather than crash
-    # the background task, which is acceptable for an unexpected failure.
-    if not _run_node(
-        NodeName.SKEPTIC,
-        lambda: _run_skeptic(state),
-        state,
-        progress,
-    ):
-        return state
-
-    # --- Writer ----------------------------------------------------------
-    if not _run_node(
-        NodeName.WRITER,
-        lambda: _run_writer(state, provider),
-        state,
-        progress,
-    ):
-        return state
-
+    final = get_compiled_graph().invoke(to_graph_input(state), context=ctx)
+    # Validate fully before assigning anything onto the caller's instance.
+    validated = from_graph_state(final, state)
+    for name in _STATE_FIELDS:
+        setattr(state, name, getattr(validated, name))
     return state

@@ -19,6 +19,7 @@ dependencies = [
     "rank-bm25==0.2.2",
     "hypothesis==6.170.9",
     "python-multipart==0.0.32",
+    "langgraph==1.2.17",
 ]
 
 [project.optional-dependencies]
