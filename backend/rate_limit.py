@@ -1,8 +1,9 @@
 """In-memory cost protection for the public demo.
 
-Two limits guard LLM spend:
+Two kinds of limits guard LLM spend:
 
-* Per-IP sliding windows: 5 bill analyses and 20 chat questions per hour.
+* Per-IP sliding windows: 5 bill analyses, 20 chat questions, and 10 letter
+  translations per hour.
 * A global cap on bill analyses per UTC day (``MAX_DAILY_ANALYSES``, default 50).
 
 State lives in process memory, like sessions. It resets on restart and is not
@@ -26,6 +27,7 @@ import config
 WINDOW_SECONDS = 60 * 60
 ANALYSES_PER_IP_PER_HOUR = 5
 QUESTIONS_PER_IP_PER_HOUR = 20
+TRANSLATIONS_PER_IP_PER_HOUR = 10
 
 #: Shown to the user when any limit is hit (status 429).
 DEMO_LIMIT_MESSAGE = (
@@ -81,15 +83,22 @@ class RateLimiter:
             self._day_count += 1
             return True
 
-    def allow_question(self, ip: str) -> bool:
-        """Record and allow one chat question, or return False if limited."""
+    def _allow_windowed(self, kind: str, ip: str, limit: int) -> bool:
         now = self._clock()
         with self._lock:
-            key = ("question", ip)
-            if not self._window_allows(key, QUESTIONS_PER_IP_PER_HOUR, now):
+            key = (kind, ip)
+            if not self._window_allows(key, limit, now):
                 return False
             self._hits[key].append(now)
             return True
+
+    def allow_question(self, ip: str) -> bool:
+        """Record and allow one chat question, or return False if limited."""
+        return self._allow_windowed("question", ip, QUESTIONS_PER_IP_PER_HOUR)
+
+    def allow_translation(self, ip: str) -> bool:
+        """Record and allow one letter translation, or return False if limited."""
+        return self._allow_windowed("translation", ip, TRANSLATIONS_PER_IP_PER_HOUR)
 
 
 #: Process-wide limiter used by the HTTP routes.

@@ -209,6 +209,15 @@ app.add_middleware(
 )
 
 
+@app.get("/health")
+async def health():
+    """Liveness check for the frontend's cold-start ping.
+
+    Cheap by design: no LLM call, no knowledge-base build, no config details.
+    """
+    return {"status": "ok"}
+
+
 @app.post("/sessions")
 async def create_session_endpoint(
     request: Request,
@@ -726,7 +735,9 @@ class TranslateLetterRequest(BaseModel):
 
 
 @app.post("/sessions/{session_id}/translate-letter")
-async def translate_letter_endpoint(session_id: str, body: TranslateLetterRequest):
+async def translate_letter_endpoint(
+    session_id: str, body: TranslateLetterRequest, request: Request
+):
     """Translate the English appeal letter into the session language.
 
     The appeal letter is always written in English (it is what gets sent). This
@@ -767,6 +778,10 @@ async def translate_letter_endpoint(session_id: str, body: TranslateLetterReques
                 f"The maximum is {MAX_LETTER_CHARS} characters."
             ),
         )
+
+    # Cost protection: 10 translations per IP per hour (valid requests only).
+    if not rate_limit.limiter.allow_translation(rate_limit.client_ip(request)):
+        raise rate_limit.demo_limit_error()
 
     provider = sessions.get_provider()
     try:

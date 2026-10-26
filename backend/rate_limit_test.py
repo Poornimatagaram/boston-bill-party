@@ -11,13 +11,17 @@ import rate_limit
 import sessions
 from ask_endpoint_test import _call_post_json, _MockProvider, _register_analyzed
 from main_test import _MINIMAL_PDF, _upload
+from models import SupportedLanguage
 from rate_limit import (
     ANALYSES_PER_IP_PER_HOUR,
     DEMO_LIMIT_MESSAGE,
     QUESTIONS_PER_IP_PER_HOUR,
+    TRANSLATIONS_PER_IP_PER_HOUR,
     WINDOW_SECONDS,
     RateLimiter,
 )
+from translate_endpoint_test import _MockProvider as _TranslateProvider
+from translate_endpoint_test import _register as _register_translation_session
 
 
 class FakeClock:
@@ -166,3 +170,81 @@ def test_question_limit_on_ask_endpoint(monkeypatch):
     assert payload["detail"] == DEMO_LIMIT_MESSAGE
     assert len(provider.calls) == QUESTIONS_PER_IP_PER_HOUR
     sessions.clear_sessions()
+
+
+# --------------------------------------------------------------- translation + health
+
+
+def test_translation_limit_per_ip():
+    rl = RateLimiter(clock=FakeClock(), max_daily=lambda: 0)
+    assert all(rl.allow_translation("ip") for _ in range(TRANSLATIONS_PER_IP_PER_HOUR))
+    assert not rl.allow_translation("ip")
+    assert rl.allow_translation("other")
+    # Translation quota is separate from the chat quota.
+    assert rl.allow_question("ip")
+
+
+def test_translation_limit_on_endpoint(monkeypatch):
+    sessions.clear_sessions()
+    _register_translation_session("tr-limit", SupportedLanguage.ES)
+    provider = _TranslateProvider()
+    monkeypatch.setattr(sessions, "get_provider", lambda: provider)
+    path = "/sessions/tr-limit/translate-letter"
+    for _ in range(TRANSLATIONS_PER_IP_PER_HOUR):
+        status, payload = _call_post_json(path, {"letter": "Dear billing office,"})
+        assert status == 200, payload
+    status, payload = _call_post_json(path, {"letter": "Dear billing office,"})
+    assert status == 429
+    assert payload["detail"] == DEMO_LIMIT_MESSAGE
+    assert len(provider.calls) == TRANSLATIONS_PER_IP_PER_HOUR
+    sessions.clear_sessions()
+
+
+def test_health_endpoint_is_cheap(monkeypatch):
+    def _fail():
+        raise AssertionError("health must not touch the provider")
+
+    monkeypatch.setattr(sessions, "get_provider", _fail)
+    status, payload = _call_get("/health")
+    assert status == 200
+    assert payload == {"status": "ok"}
+
+
+def _call_get(path: str):
+    """Minimal ASGI GET (same in-process approach as the other endpoint tests)."""
+    import json
+
+    import anyio
+
+    import main
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.3"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("127.0.0.1", 8000),
+    }
+    captured: dict = {"status": None, "body": bytearray()}
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        if message["type"] == "http.response.start":
+            captured["status"] = message["status"]
+        elif message["type"] == "http.response.body":
+            captured["body"] += message.get("body", b"")
+
+    async def drive():
+        await main.app(scope, receive, send)
+
+    anyio.run(drive)
+    return captured["status"], json.loads(bytes(captured["body"]))

@@ -35,12 +35,14 @@
  * The frontend never handles the LLM API key.
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ArrowRight,
   CircleCheck,
   FileText,
   Flag,
+  Info,
   LayoutDashboard,
   ListChecks,
   LoaderCircle,
@@ -89,7 +91,7 @@ const TAB_ICONS: ReadonlyArray<{ id: TabId; icon: LucideIcon }> = [
 ];
 
 /** A result we can render: Summary (always) + optional letter + findings. */
-interface LoadedResult {
+export interface LoadedResult {
   summaryEntries: string[];
   appealLetter: string | null;
   findings: Finding[];
@@ -142,27 +144,44 @@ function countByType(findings: Finding[]): Array<[FindingType, number]> {
   return [...counts.entries()];
 }
 
-export default function ResultsView({ sessionId }: { sessionId: string }) {
+/**
+ * `example` switches to Example mode: the view renders that bundled result and
+ * makes NO backend calls. Confirm is local only (export actions still work),
+ * and the chat assistant and letter translation are not shown.
+ */
+export default function ResultsView({
+  sessionId,
+  example,
+}: {
+  sessionId: string;
+  example?: LoadedResult;
+}) {
   const t = useT();
   const tabsId = useId();
   const letterFieldId = useId();
   const charCountId = useId();
 
-  const [load, setLoad] = useState<LoadState>({ kind: "loading" });
+  const [load, setLoad] = useState<LoadState>(
+    example ? { kind: "loaded", result: example } : { kind: "loading" },
+  );
   const [confirm, setConfirm] = useState<ConfirmState>({ kind: "idle" });
   const [tab, setTab] = useState<TabId>("overview");
 
   // The editable letter text. `null` means "not seeded yet" so we seed it from
   // the loaded result exactly once and then RETAIN user edits (Req 8.4) across
   // re-renders/polls and across a retry that re-produces the same letter.
-  const [letter, setLetter] = useState<string | null>(null);
-  const letterSeededRef = useRef(false);
+  const [letter, setLetter] = useState<string | null>(
+    example ? (example.appealLetter ?? "") : null,
+  );
+  const letterSeededRef = useRef(example !== undefined);
 
   // Bumped by the Retry action to re-run the load effect without discarding the
   // Summary we already show (the effect seeds state but never clears `letter`).
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
+    // Example mode is fully static: never poll the backend.
+    if (example) return;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const controller = new AbortController();
@@ -231,7 +250,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
 
     poll();
     return stop;
-  }, [sessionId, reloadToken]);
+  }, [sessionId, reloadToken, example]);
 
   // Retry after a writer/node error: re-fetch status WITHOUT discarding the
   // Summary we already display (Req 8.2). The letter is only seeded once, so
@@ -246,6 +265,12 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
   // 8.7). Never fired on blur/navigation.
   const handleConfirm = useCallback(async () => {
     if (letter === null) return;
+    if (example) {
+      // Example mode: confirm locally so the export actions can be tried;
+      // nothing is sent to the backend.
+      setConfirm({ kind: "confirmed" });
+      return;
+    }
     setConfirm({ kind: "confirming" });
     try {
       await confirmLetter(sessionId, letter);
@@ -256,7 +281,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
         message: err instanceof ApiError ? err.message : null,
       });
     }
-  }, [sessionId, letter]);
+  }, [sessionId, letter, example]);
 
   const tabDomId = (id: TabId) => `${tabsId}-tab-${id}`;
   const panelDomId = (id: TabId) => `${tabsId}-panel-${id}`;
@@ -335,6 +360,22 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
   return (
     <ReadAloudProvider>
       <div className="flex flex-col gap-5">
+        {example ? (
+          <section className="flex flex-col gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" aria-hidden="true" />
+              {t.example.notice}
+            </p>
+            <Link
+              href="/#upload"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-navy-700 px-4 py-2 font-semibold text-white shadow-card hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+            >
+              {t.example.tryOwn}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </section>
+        ) : null}
+
         {isError ? (
           <section
             role="alert"
@@ -636,7 +677,7 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
                 className="w-full resize-y rounded-2xl border border-navy-200 bg-navy-50/40 px-4 py-3 font-mono text-sm leading-relaxed text-navy-900 outline-none focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-200 disabled:opacity-60"
               />
 
-              {result.language !== "en" ? (
+              {result.language !== "en" && !example ? (
                 <LetterTranslation
                   sessionId={sessionId}
                   letter={letter}
@@ -703,8 +744,10 @@ export default function ResultsView({ sessionId }: { sessionId: string }) {
           )}
         </div>
 
-        {/* Voice Q&A chat assistant (task 15.2, Req 10.1). */}
-        <VoiceQA sessionId={sessionId} language={result.language} />
+        {/* Voice Q&A chat assistant (task 15.2, Req 10.1); off in Example mode. */}
+        {example ? null : (
+          <VoiceQA sessionId={sessionId} language={result.language} />
+        )}
       </div>
     </ReadAloudProvider>
   );

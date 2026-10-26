@@ -33,6 +33,7 @@ const en = {
       "Upload a bill and a team of AI agents audits every charge, checks your patient rights, and drafts an appeal letter in minutes. Results in English, Spanish, Portuguese, or Haitian Creole.",
     cta: "Analyze my bill",
     secondary: "See how it works",
+    exampleCta: "See an example result",
     synthetic: "Synthetic data only. No real patient data.",
     imageAlt: "A patient reviewing a medical bill with a care advocate",
     chipDuplicate: "Duplicate charge",
@@ -99,6 +100,13 @@ const en = {
     title: "About Boston Bill Party",
     body: "Boston Bill Party is a multi-agent AI patient advocate that audits medical bills and drafts appeals for Massachusetts residents. It was built at Hackachusetts 2026 to make billing errors easier to catch and easier to dispute, because no one should be overcharged without representation.",
   },
+  example: {
+    notice: "This is a saved example, not a live analysis. Nothing you do on this page is sent anywhere, and the chat assistant is turned off.",
+    tryOwn: "Analyze a bill yourself",
+  },
+  wake: {
+    slow: "Waking up our AI agents… this can take up to a minute.",
+  },
   footer: {
     syntheticStrong: "Synthetic data only.",
     syntheticBody:
@@ -110,6 +118,10 @@ const en = {
     newTab: "(opens in a new tab)",
   },
   pages: {
+    example: {
+      title: "Example analysis",
+      subtitle: "A real analysis of our synthetic sample bill, saved ahead of time.",
+    },
     progress: {
       title: "Analyzing your bill",
       subtitle: "Five specialized agents review your bill one step at a time.",
@@ -316,6 +328,7 @@ const es: Dictionary = {
       "Sube una factura y un equipo de agentes de IA revisa cada cargo, verifica tus derechos como paciente y redacta una carta de apelación en minutos. Resultados en inglés, español, portugués o criollo haitiano.",
     cta: "Analizar mi factura",
     secondary: "Ver cómo funciona",
+    exampleCta: "Ver un resultado de ejemplo",
     synthetic: "Solo datos sintéticos. Sin datos reales de pacientes.",
     imageAlt: "Una paciente revisa una factura médica con una asesora",
     chipDuplicate: "Cargo duplicado",
@@ -382,6 +395,13 @@ const es: Dictionary = {
     title: "Acerca de Boston Bill Party",
     body: "Boston Bill Party es un defensor del paciente con IA, formado por varios agentes, que revisa facturas médicas y redacta apelaciones para residentes de Massachusetts. Se creó en Hackachusetts 2026 para que los errores de facturación sean más fáciles de detectar y de disputar, porque nadie debería pagar de más sin representación.",
   },
+  example: {
+    notice: "Este es un ejemplo guardado, no un análisis en vivo. Nada de lo que hagas en esta página se envía a ningún lugar, y el asistente de chat está desactivado.",
+    tryOwn: "Analiza una factura tú mismo",
+  },
+  wake: {
+    slow: "Despertando a nuestros agentes de IA… esto puede tardar hasta un minuto.",
+  },
   footer: {
     syntheticStrong: "Solo datos sintéticos.",
     syntheticBody:
@@ -393,6 +413,10 @@ const es: Dictionary = {
     newTab: "(se abre en una pestaña nueva)",
   },
   pages: {
+    example: {
+      title: "Análisis de ejemplo",
+      subtitle: "Un análisis real de nuestra factura de muestra sintética, guardado con anticipación.",
+    },
     progress: {
       title: "Analizando tu factura",
       subtitle: "Cinco agentes especializados revisan tu factura paso a paso.",
@@ -598,6 +622,7 @@ const pt: Dictionary = {
       "Envie uma conta e uma equipe de agentes de IA analisa cada cobrança, verifica seus direitos como paciente e redige uma carta de contestação em minutos. Resultados em inglês, espanhol, português ou crioulo haitiano.",
     cta: "Analisar minha conta",
     secondary: "Veja como funciona",
+    exampleCta: "Ver um resultado de exemplo",
     synthetic: "Apenas dados sintéticos. Nenhum dado real de paciente.",
     imageAlt: "Uma paciente analisando uma conta médica com uma assistente",
     chipDuplicate: "Cobrança duplicada",
@@ -664,6 +689,13 @@ const pt: Dictionary = {
     title: "Sobre o Boston Bill Party",
     body: "O Boston Bill Party é um defensor do paciente com IA, formado por vários agentes, que audita contas médicas e redige contestações para moradores de Massachusetts. Ele foi criado no Hackachusetts 2026 para tornar os erros de cobrança mais fáceis de identificar e de contestar, porque ninguém deve pagar a mais sem representação.",
   },
+  example: {
+    notice: "Este é um exemplo salvo, não uma análise ao vivo. Nada do que você fizer nesta página é enviado, e o assistente de chat está desativado.",
+    tryOwn: "Analise uma conta você mesmo",
+  },
+  wake: {
+    slow: "Acordando nossos agentes de IA… isso pode levar até um minuto.",
+  },
   footer: {
     syntheticStrong: "Apenas dados sintéticos.",
     syntheticBody:
@@ -675,6 +707,10 @@ const pt: Dictionary = {
     newTab: "(abre em uma nova aba)",
   },
   pages: {
+    example: {
+      title: "Análise de exemplo",
+      subtitle: "Uma análise real da nossa conta de amostra sintética, salva com antecedência.",
+    },
     progress: {
       title: "Analisando sua conta",
       subtitle:
@@ -881,6 +917,7 @@ const ht: Dictionary = {
       "Voye yon bòdwo epi yon ekip ajan IA ap verifye chak frè, tcheke dwa ou kòm pasyan, epi ekri yon lèt apèl nan kèk minit. Rezilta yo disponib an anglè, panyòl, pòtigè oswa kreyòl ayisyen.",
     cta: "Analize bòdwo mwen",
     secondary: "Gade kijan sa mache",
+    exampleCta: "Gade yon egzanp rezilta",
     synthetic: "Done sentetik sèlman. Pa gen vrè done pasyan.",
     imageAlt: "Yon pasyan k ap egzamine yon bòdwo medikal ak yon konseyè",
     chipDuplicate: "Frè an doub",
@@ -947,6 +984,13 @@ const ht: Dictionary = {
     title: "Konsènan Boston Bill Party",
     body: "Boston Bill Party se yon defansè pasyan ak IA, ki fèt ak plizyè ajan, ki verifye bòdwo medikal epi ekri apèl pou moun ki rete Massachusetts. Nou te kreye l nan Hackachusetts 2026 pou fè erè nan bòdwo yo pi fasil pou jwenn e pi fasil pou konteste, paske pèsonn pa ta dwe peye twòp san reprezantasyon.",
   },
+  example: {
+    notice: "Sa a se yon egzanp ki sove, se pa yon analiz an dirèk. Anyen ou fè sou paj sa a pa voye okenn kote, epi asistan chat la etenn.",
+    tryOwn: "Analize yon bòdwo pou kont ou",
+  },
+  wake: {
+    slow: "N ap reveye ajan IA nou yo… sa ka pran jiska yon minit.",
+  },
   footer: {
     syntheticStrong: "Done sentetik sèlman.",
     syntheticBody:
@@ -958,6 +1002,10 @@ const ht: Dictionary = {
     newTab: "(ap louvri nan yon nouvo onglè)",
   },
   pages: {
+    example: {
+      title: "Egzanp analiz",
+      subtitle: "Yon vrè analiz bòdwo egzanp sentetik nou an, ki te sove davans.",
+    },
     progress: {
       title: "N ap analize bòdwo ou",
       subtitle: "Senk ajan espesyalize ap revize bòdwo ou, etap pa etap.",

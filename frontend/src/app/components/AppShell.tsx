@@ -13,7 +13,7 @@ export default function AppShell({
   page,
   children,
 }: {
-  page: "progress" | "results";
+  page: "progress" | "results" | "example";
   children: ReactNode;
 }) {
   const { title, subtitle } = useT().pages[page];
