@@ -1,0 +1,210 @@
+{
+  "pbtResults": {
+    "5.2 Write the required model-based equivalence property test in `backend/pipeline/graph_equivalence_test.py`": {
+      "status": "passed",
+      "lastRunTimestamp": 1792900350345
+    },
+    "5.3 Write the required Event_Sequence equivalence property test and bridge examples in `backend/pipeline/graph_events_test.py`": {
+      "status": "passed",
+      "lastRunTimestamp": 1792900766107
+    }
+  },
+  "executionHistory": {
+    "1.1 Add the `langgraph` pin to both dependency files": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899124226
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899171953
+      }
+    ],
+    "1.2 Create `backend/pipeline/_reference_runner.py` as a verbatim copy of the current runner": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899172377
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899240031
+      }
+    ],
+    "1.3 Write `backend/deps_test.py` for the dependency rules": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899244756
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899322251
+      }
+    ],
+    "1. Pin LangGraph and snapshot the pre-migration runner": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899322278
+      }
+    ],
+    "2.1 Create `backend/pipeline/_graph_fixtures.py`": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899326138
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899645489
+      }
+    ],
+    "2. Build shared test fixtures": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899645522
+      }
+    ],
+    "3.1 Add runtime context, state conversion, and update helpers": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899651097
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899799570
+      }
+    ],
+    "3.4 Implement node wrappers and node bodies": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899799791
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899953446
+      }
+    ],
+    "3.5 Build the graph, Error_Router, and compile-once accessor": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792899954241
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900047347
+      }
+    ],
+    "3.6 Rewrite `run_pipeline` to invoke the compiled graph": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900048278
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900185569
+      }
+    ],
+    "3. Rewrite `backend/pipeline/graph.py` on LangGraph": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900185603
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900194419
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900243458
+      }
+    ],
+    "5.1 Write topology tests in `backend/pipeline/graph_topology_test.py`": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900275434
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900789704
+      }
+    ],
+    "5.2 Write the required model-based equivalence property test in `backend/pipeline/graph_equivalence_test.py`": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900276628
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900789808
+      }
+    ],
+    "5.3 Write the required Event_Sequence equivalence property test and bridge examples in `backend/pipeline/graph_events_test.py`": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900278240
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900790995
+      }
+    ],
+    "5.4 Write the import-side-effect test in `backend/pipeline/graph_import_test.py`": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900279214
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900792012
+      }
+    ],
+    "5. Required topology and equivalence tests": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900792037
+      }
+    ],
+    "6. Checkpoint - Verify and commit the core migration": [
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900797192
+      },
+      {
+        "executionId": "0a368959-de83-47ff-bc13-4e79870adb69",
+        "chatSessionId": "sess_27b71dfd-6362-460a-bb2d-82da93b43a7a",
+        "timestamp": 1792900974207
+      }
+    ]
+  }
+}

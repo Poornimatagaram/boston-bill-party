@@ -10,27 +10,27 @@ Conventions for every task: tests are sibling `*_test.py` files, use stub provid
 
 ## Tasks
 
-- [ ] 1. Pin LangGraph and snapshot the pre-migration runner
-  - [ ] 1.1 Add the `langgraph` pin to both dependency files
+- [x] 1. Pin LangGraph and snapshot the pre-migration runner
+  - [x] 1.1 Add the `langgraph` pin to both dependency files
     - Add `langgraph==1.2.17` exactly once to `backend/requirements.txt` and to `[project].dependencies` in `backend/pyproject.toml`
     - Leave every existing pin unchanged; do not pin `langgraph-checkpoint`, `langchain-core`, `langgraph-prebuilt`, `langgraph-sdk`, or `langsmith` in this task
     - Install into `backend/.venv` with `.venv/bin/python -m pip install -r requirements.txt` and confirm `import langgraph.graph` works
     - _Requirements: 1.1, 1.2, 1.4, 1.5_
 
-  - [ ] 1.2 Create `backend/pipeline/_reference_runner.py` as a verbatim copy of the current runner
+  - [x] 1.2 Create `backend/pipeline/_reference_runner.py` as a verbatim copy of the current runner
     - Copy the current (pre-migration) `backend/pipeline/graph.py` orchestration verbatim before any rewrite: `_emit`, `_seed_node_status`, the `_run_*` node functions, `_run_node`, `_run_node_local`, and `run_pipeline` renamed to `run_pipeline_reference`
     - Import the same Node_Functions from their existing modules so equivalence tests compare orchestration only; keep module-attribute lookup of `read_pdf_text` the same as the original
     - Add a module docstring stating it is the frozen Pre_Migration_Runner used only by tests; the leading underscore keeps pytest from collecting it
     - _Requirements: 3.7, 7.7_
 
-  - [ ] 1.3 Write `backend/deps_test.py` for the dependency rules
+  - [x] 1.3 Write `backend/deps_test.py` for the dependency rules
     - Parse `requirements.txt` and `pyproject.toml` (`tomllib`); assert each `langgraph*` package is declared once with an identical `==` pin and no range operators or extras
     - AST-scan `pipeline/graph.py` for `langgraph*` imports (including imports inside functions), map `langgraph.checkpoint*` to `langgraph-checkpoint` and other `langgraph.*` to `langgraph`, and assert the declared langgraph-family set equals the imported set
     - Assert all pre-migration pins are still present at their existing versions
     - _Requirements: 1.1, 1.2, 1.4, 1.5, 1.6_
 
-- [ ] 2. Build shared test fixtures
-  - [ ] 2.1 Create `backend/pipeline/_graph_fixtures.py`
+- [x] 2. Build shared test fixtures
+  - [x] 2.1 Create `backend/pipeline/_graph_fixtures.py`
     - `synthetic_bills()` Hypothesis strategy: 1–12 line items, codes from a small pool (so duplicates occur), `Decimal` amounts quantized to `0.01` in `[0.01, 99999.99]`, optional stated-total mismatch; outputs stub Extractor JSON plus fake PDF text
     - Helper to load the 10 eval-set bills for `@example`/parametrized use
     - `scenarios()` strategy over success, Rights_Checker failures (raise, empty, timeout, unexpected exception, empty query, missing bill), Extractor, Auditor, Skeptic, and Writer failures, with arbitrary exception messages via `text()`
@@ -41,8 +41,8 @@ Conventions for every task: tests are sibling `*_test.py` files, use stub provid
     - Synthetic data only; no real patient data
     - _Requirements: 3.7, 10.6, 10.7_
 
-- [ ] 3. Rewrite `backend/pipeline/graph.py` on LangGraph
-  - [ ] 3.1 Add runtime context, state conversion, and update helpers
+- [x] 3. Rewrite `backend/pipeline/graph.py` on LangGraph
+  - [x] 3.1 Add runtime context, state conversion, and update helpers
     - Add frozen dataclass `PipelineContext(provider, kb, pdf_source, live_state, progress)` passed via `context_schema`; it never enters Graph_State
     - Implement `to_graph_input(state)` (exactly the 11 fields, deep-copied) and `from_graph_state(values)` (fill omitted keys from the caller, reject unknown keys, strict `PipelineState.model_validate`, raise `ValidationError` without touching the caller)
     - Implement `_diff(before, after)` and `_apply_update(live, update)` (validate then `setattr`)
@@ -58,31 +58,31 @@ Conventions for every task: tests are sibling `*_test.py` files, use stub provid
     - **Property 4: Invalid conversion is rejected without side effects**
     - **Validates: Requirements 2.7**
 
-  - [ ] 3.4 Implement node wrappers and node bodies
+  - [x] 3.4 Implement node wrappers and node bodies
     - `_fatal_node(node, body)`: emit RUNNING, run body on `state.model_copy(deep=True)`, map `ExtractorError`/`WriterError` to `to_state_error()` and other exceptions to `{failedNode, message: str(exc)}`, diff to keep partial writes, set `node_status`, mirror onto `live_state`, emit final status, return the update dict, never raise
     - `_local_node(node, body)` for `rights_checker`: any exception sets `rights_status = UNAVAILABLE`, status always `COMPLETED`, `error` never written
     - Bodies with the same calls and order as the pre-migration `_run_*`: extractor (`read_pdf_text` via module attribute, then `extract_bill`), auditor (`compute_sum_check`, `audit`, `retained_findings = list(findings)`), rights_checker (`run_rights_checker(w, ctx.kb)` once), skeptic (`apply_skeptic(findings)`), writer (`write_analysis(retained_findings, language, provider)` once)
     - No provider access in auditor or skeptic bodies
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.9, 3.10, 3.11, 5.1, 5.2, 5.3, 5.7, 5.8, 6.1, 6.2, 7.1, 7.2, 7.3, 7.4, 7.6_
 
-  - [ ] 3.5 Build the graph, Error_Router, and compile-once accessor
+  - [x] 3.5 Build the graph, Error_Router, and compile-once accessor
     - `_route_after(node)`: `END` if `state.error` is set, else next node in `NODE_ORDER`
     - `_build_graph()`: `StateGraph(PipelineState, context_schema=PipelineContext)`, five nodes keyed by lowercase `NodeName`, `START → extractor`, conditional edges for extractor/auditor/skeptic `{next, END}`, plain edge `rights_checker → skeptic`, conditional `writer → {END}`
     - `get_compiled_graph()`: module-level `_COMPILED` with `threading.Lock` double-checked init, no checkpointer
     - Import only `langgraph.graph` and `langgraph.runtime`; no `langgraph.checkpoint` import; build nothing at import time
     - _Requirements: 3.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.4, 5.5, 5.6, 5.9_
 
-  - [ ] 3.6 Rewrite `run_pipeline` to invoke the compiled graph
+  - [x] 3.6 Rewrite `run_pipeline` to invoke the compiled graph
     - Seed node status, resolve the KB before `invoke`, build `PipelineContext`, call `get_compiled_graph().invoke(to_graph_input(state), context=ctx)`
     - Convert with `from_graph_state`, assign every field onto the caller's instance, return that same instance
     - Keep the signature `run_pipeline(state, provider, pdf_source, progress=None, kb=None)`; `sessions.py` needs no change
     - _Requirements: 2.3, 2.6, 4.2, 5.7, 7.5, 7.10_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run `cd backend && .venv/bin/python -m pytest -q`; all 71 pre-existing tests must pass unmodified. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Required topology and equivalence tests
-  - [ ] 5.1 Write topology tests in `backend/pipeline/graph_topology_test.py`
+- [x] 5. Required topology and equivalence tests
+  - [x] 5.1 Write topology tests in `backend/pipeline/graph_topology_test.py`
     - Node set is exactly `{__start__, extractor, auditor, rights_checker, skeptic, writer, __end__}`; entry node is `extractor`; edge set and `conditional` flags match the design
     - Success run executes each node once in order to `END` (via `stream_mode="updates"`), all `COMPLETED`, `error is None`
     - One fatal case each for extractor and writer (stub provider) and auditor and skeptic (monkeypatched `pipeline.graph.audit` / `apply_skeptic`): routes to `END`, failing node `ERROR`, earlier `COMPLETED`, later `PENDING`, `error.failedNode` correct, zero later provider calls
@@ -90,21 +90,21 @@ Conventions for every task: tests are sibling `*_test.py` files, use stub provid
     - `NODE_ORDER`/`TOTAL_NODES` values; compile-once (reset `_COMPILED`, spy `compile`, sequential and concurrent first calls give one compile); Graph_State fields equal `PipelineState.model_fields`; default graph `checkpointer is None`
     - _Requirements: 2.1, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 9.2, 10.2, 10.3, 10.4, 10.5, 10.7, 10.8_
 
-  - [ ] 5.2 Write the required model-based equivalence property test in `backend/pipeline/graph_equivalence_test.py`
+  - [x] 5.2 Write the required model-based equivalence property test in `backend/pipeline/graph_equivalence_test.py`
     - **Property 1: Model-based equivalence with the Pre_Migration_Runner**
     - Compare `run_pipeline` against `run_pipeline_reference` from `_reference_runner.py` over the 10 eval-set bills plus Hypothesis bills (`max_examples=100`), all languages and scenarios; assert caller identity, `model_dump()` equality, `Decimal` scale via `str()`, and identical `(node, status)` transition lists
     - **Validates: Requirements 2.3, 2.5, 2.6, 3.7, 3.9, 4.2, 5.6, 7.2, 9.2**
 
-  - [ ] 5.3 Write the required Event_Sequence equivalence property test and bridge examples in `backend/pipeline/graph_events_test.py`
+  - [x] 5.3 Write the required Event_Sequence equivalence property test and bridge examples in `backend/pipeline/graph_events_test.py`
     - **Property 2: Event_Sequence equivalence through the Session_Bridge**
     - Async test with a real `asyncio.Queue` and `_make_progress_bridge`, drawing from success, Rights_Checker failure, Extractor failure, Writer failure, at least 50 examples (configure 100); assert equality with the reference runner driven through the same bridge, payload key sets, and a single final `("done", None)`
     - Req 7.5 example: writer stub blocks on a `threading.Event`; the writer `RUNNING` progress is observed on the queue while blocked
     - Req 7.9 example: KB builder raises, giving `node_error` then `done`
     - **Validates: Requirements 6.7, 7.5, 7.7, 7.8, 7.9, 8.4, 10.6**
 
-  - [ ] 5.4 Write the import-side-effect test in `backend/pipeline/graph_import_test.py`
+  - [x] 5.4 Write the import-side-effect test in `backend/pipeline/graph_import_test.py`
     - Subprocess import of `pipeline.graph` with `socket.socket`, `KnowledgeBase`, and `build_provider` patched to raise; import succeeds and `_COMPILED` and `_KNOWLEDGE_BASE` are still `None`
-    - Assert `langgraph.checkpoint` is not in `sys.modules` after the import
+    - Check the source, not `sys.modules` (`import langgraph.graph` loads `langgraph.checkpoint` transitively): AST-assert `pipeline/graph.py` has no direct `langgraph.checkpoint*` import (including nested and `from langgraph import checkpoint`), and assert in the subprocess that no `BaseCheckpointSaver` instance exists and no `pipeline.graph` attribute holds a checkpointer after the import
     - _Requirements: 4.7_
 
   - [ ]* 5.5 Write property test for node-fatal failure invariants in `backend/pipeline/graph_equivalence_test.py`
@@ -139,7 +139,7 @@ Conventions for every task: tests are sibling `*_test.py` files, use stub provid
     - **Property 12: Concurrent runs are isolated** (25 examples, barrier in stub provider)
     - **Validates: Requirements 4.6**
 
-- [ ] 6. Checkpoint - Verify and commit the core migration
+- [x] 6. Checkpoint - Verify and commit the core migration
   - Run `cd backend && .venv/bin/python -m pytest -q`; all 71 pre-existing tests plus the new tests must pass, with no pre-existing test skipped, deselected, xfailed, or edited
   - Confirm `git diff --stat frontend/` is empty
   - Confirm `git diff --exit-code HEAD -- backend/pipeline/extractor.py backend/pipeline/sumcheck.py backend/pipeline/auditor.py backend/pipeline/rights_checker.py backend/pipeline/skeptic.py backend/pipeline/writer.py backend/pipeline/state.py backend/main.py backend/sessions.py` shows no changes
