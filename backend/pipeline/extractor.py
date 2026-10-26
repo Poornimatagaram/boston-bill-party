@@ -28,6 +28,7 @@ injected provider holds the key; nothing here logs request/response bodies.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any, Optional, Protocol
@@ -36,6 +37,8 @@ import pdfplumber
 from pydantic import ValidationError
 
 from models import ExtractedBill
+
+logger = logging.getLogger("boston_bill_party")
 
 # Node identifier for this stage. Task 2.1 will introduce a shared ``NodeName``
 # literal/enum in ``config.py``; until then this string is the stable node id
@@ -237,11 +240,19 @@ def structure_bill(raw_text: str, provider: LLMProvider) -> ExtractedBill:
         raise ExtractorError(
             message="Bill extraction timed out after 60 seconds."
         ) from exc
+    except Exception as exc:
+        # Provider failure (HTTP error, network, ...). The detail is logged
+        # server-side only; the error message stays a fixed string.
+        logger.warning("Extractor provider call failed: %s: %s", type(exc).__name__, exc)
+        raise ExtractorError(
+            message="Bill extraction failed because the AI service did not respond."
+        ) from exc
 
     try:
         payload = json.loads(_strip_code_fences(completion))
     except json.JSONDecodeError as exc:
         # Non-JSON output is a schema nonconformance (Req 2.6); no partial object.
+        logger.warning("Extractor output was not valid JSON: %s", exc.msg)
         raise ExtractorError(
             message="LLM output was not valid JSON and does not conform to the "
             "ExtractedBill schema.",
@@ -255,9 +266,11 @@ def structure_bill(raw_text: str, provider: LLMProvider) -> ExtractedBill:
     except ValidationError as exc:
         field_errors = _collect_field_errors(exc)
         named = "; ".join(f"{fe.field}: {fe.reason}" for fe in field_errors)
+        # Field names/reasons come from model output: log them, keep the
+        # message fixed.
+        logger.warning("Extractor output failed schema validation: %s", named)
         raise ExtractorError(
-            message="LLM output does not conform to the ExtractedBill schema: "
-            + named,
+            message="LLM output does not conform to the ExtractedBill schema.",
             field_errors=field_errors,
         ) from exc
 

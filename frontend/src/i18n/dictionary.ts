@@ -107,6 +107,12 @@ const en = {
   wake: {
     slow: "Waking up our AI agents… this can take up to a minute.",
   },
+  errors: {
+    extractor: "We couldn't read this bill. Please try again in a moment, or try a different PDF.",
+    check: "Something went wrong while checking this bill. Please try again.",
+    writer: "We couldn't write your summary and appeal letter. Please try again in a moment.",
+    generic: "Something went wrong on our side. Please try again in a moment.",
+  },
   footer: {
     syntheticStrong: "Synthetic data only.",
     syntheticBody:
@@ -402,6 +408,12 @@ const es: Dictionary = {
   wake: {
     slow: "Despertando a nuestros agentes de IA… esto puede tardar hasta un minuto.",
   },
+  errors: {
+    extractor: "No pudimos leer esta factura. Inténtalo de nuevo en un momento o prueba con otro PDF.",
+    check: "Algo salió mal al revisar esta factura. Inténtalo de nuevo.",
+    writer: "No pudimos redactar tu resumen y tu carta de apelación. Inténtalo de nuevo en un momento.",
+    generic: "Algo salió mal de nuestro lado. Inténtalo de nuevo en un momento.",
+  },
   footer: {
     syntheticStrong: "Solo datos sintéticos.",
     syntheticBody:
@@ -695,6 +707,12 @@ const pt: Dictionary = {
   },
   wake: {
     slow: "Acordando nossos agentes de IA… isso pode levar até um minuto.",
+  },
+  errors: {
+    extractor: "Não conseguimos ler esta conta. Tente novamente em instantes ou use outro PDF.",
+    check: "Algo deu errado ao verificar esta conta. Tente novamente.",
+    writer: "Não conseguimos escrever seu resumo e sua carta de contestação. Tente novamente em instantes.",
+    generic: "Algo deu errado do nosso lado. Tente novamente em instantes.",
   },
   footer: {
     syntheticStrong: "Apenas dados sintéticos.",
@@ -990,6 +1008,12 @@ const ht: Dictionary = {
   },
   wake: {
     slow: "N ap reveye ajan IA nou yo… sa ka pran jiska yon minit.",
+  },
+  errors: {
+    extractor: "Nou pa t ka li bòdwo sa a. Tanpri eseye ankò nan yon ti moman, oswa eseye yon lòt PDF.",
+    check: "Yon bagay pa mache pandan nou t ap verifye bòdwo sa a. Tanpri eseye ankò.",
+    writer: "Nou pa t ka ekri rezime ak lèt apèl ou a. Tanpri eseye ankò nan yon ti moman.",
+    generic: "Yon bagay pa mache bò kote pa nou. Tanpri eseye ankò nan yon ti moman.",
   },
   footer: {
     syntheticStrong: "Done sentetik sèlman.",

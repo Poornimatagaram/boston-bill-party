@@ -54,6 +54,7 @@ from pydantic import BaseModel, Field
 
 import rate_limit
 import sessions
+from public_errors import logger, public_error
 from config import (
     ConfigError,
     NodeName,
@@ -347,7 +348,8 @@ async def get_session_result(session_id: str):
     # Node-fatal error takes precedence: surface the error, and include any
     # Summary already produced so the writer-retry path (Req 8.2) can function.
     if session.error is not None:
-        body: dict = {"status": "error", "error": session.error}
+        # Clients get a fixed friendly message; the detail is in the server log.
+        body: dict = {"status": "error", "error": public_error(session.error)}
         if session.result is not None:
             body.update(_serialize_result(session.result))
         return body
@@ -703,6 +705,7 @@ async def ask_question_endpoint(session_id: str, body: AskRequest, request: Requ
             timeout=ASK_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
+        logger.warning("Ask timed out: session=%s", session_id)
         # Exceeded the 30s bound (Req 10.7). 504 so the frontend shows a clear
         # "could not retrieve answer" and keeps any prior answer.
         raise HTTPException(
@@ -712,9 +715,14 @@ async def ask_question_endpoint(session_id: str, body: AskRequest, request: Requ
                 "Please try again."
             ),
         )
-    except Exception:
+    except Exception as exc:
         # Provider failure. Do not leak provider internals or the API key; the
-        # message is generic and safe to surface to the client.
+        # message is generic and safe to surface to the client. The detail is
+        # logged server-side only.
+        logger.warning(
+            "Ask provider call failed: session=%s %s: %s",
+            session_id, type(exc).__name__, exc,
+        )
         raise HTTPException(
             status_code=502,
             detail="The answer could not be retrieved due to a provider error.",
@@ -790,12 +798,17 @@ async def translate_letter_endpoint(
             timeout=TRANSLATE_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
+        logger.warning("Translation timed out: session=%s", session_id)
         raise HTTPException(
             status_code=504,
             detail="The translation took too long. Please try again.",
         )
-    except Exception:
-        # Do not leak provider internals or the API key.
+    except Exception as exc:
+        # Do not leak provider internals or the API key; log the detail only.
+        logger.warning(
+            "Translation provider call failed: session=%s %s: %s",
+            session_id, type(exc).__name__, exc,
+        )
         raise HTTPException(
             status_code=502,
             detail="The translation could not be generated due to a provider error.",

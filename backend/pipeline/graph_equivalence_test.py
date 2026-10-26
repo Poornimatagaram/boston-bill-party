@@ -126,3 +126,95 @@ def test_equivalence_property(case, scenario, language) -> None:
     (success, Rights_Checker failures, and each node-fatal failure).
     """
     assert_equivalent(run_both(case, scenario, language))
+
+
+# ---------------------------------------------------------------------------
+# Property 9: No dependencies or secrets in state or error messages
+# ---------------------------------------------------------------------------
+
+import dataclasses  # noqa: E402
+
+from hypothesis import strategies as st  # noqa: E402
+
+import pipeline._graph_fixtures as fx  # noqa: E402
+import pipeline.graph as graph_mod  # noqa: E402
+from public_errors import PUBLIC_MESSAGES, public_error  # noqa: E402
+
+_SENTINEL_TEXT = st.text(alphabet="ABCDEFGHJKMNPQRSTVWXYZ23456789", min_size=12, max_size=20)
+
+
+def _with_body(action):
+    """Make a scripted failure carry the provider's sentinel body text."""
+    if isinstance(action, fx.Raise):
+        return dataclasses.replace(action, include_body=True)
+    if isinstance(action, fx.Respond) and action.text == "this is not json":
+        return dataclasses.replace(action, include_body=True)
+    return action
+
+
+def _sentinel_provider(case, scenario, api_key, body):
+    case = fx.effective_case(case, scenario)
+    return fx.StubProvider(
+        {
+            "extractor": _with_body(fx._extractor_action(case, scenario)),
+            "writer": _with_body(fx._writer_action(scenario)),
+        },
+        api_key=api_key,
+        body_sentinel=body,
+    )
+
+
+@PROPERTY_SETTINGS
+@given(
+    case=bill_cases(),
+    scenario=scenarios(),
+    language=languages(),
+    key_suffix=_SENTINEL_TEXT,
+    body=_SENTINEL_TEXT,
+)
+def test_no_dependencies_or_secrets_in_state_or_errors(
+    case, scenario, language, key_suffix, body
+) -> None:
+    # Feature: langgraph-migration, Property 9: No dependencies or secrets in state or error messages
+    """**Validates: Requirements 3.8, 5.8, 8.8**
+
+    A stub provider holds a sentinel API key and raises (or returns invalid
+    output) containing sentinel body text, mimicking a provider error such as
+    "Anthropic request failed with HTTP 401 ...". Neither sentinel, nor the
+    provider or KB objects, may appear in any streamed update, the final state,
+    or an error message; the client-facing error is always a fixed message.
+    """
+    api_key = f"sk-ant-sentinel-{key_suffix}"
+    body = f"BODY-{body}"
+    provider = _sentinel_provider(case, scenario, api_key, body)
+    kb = fx.make_kb(scenario)
+    state = fx.fresh_state(language)
+    graph_mod._seed_node_status(state)
+    provider.watch(state)
+    ctx = graph_mod.PipelineContext(
+        provider=provider,
+        kb=kb,
+        pdf_source=fx.effective_case(case, scenario).pdf(),
+        live_state=state,
+        progress=None,
+    )
+
+    with fx.scenario_environment(scenario):
+        for chunk in graph_mod.get_compiled_graph().stream(
+            graph_mod.to_graph_input(state), context=ctx, stream_mode="updates"
+        ):
+            for update in chunk.values():
+                for value in update.values():
+                    assert value is not provider and value is not kb
+                    assert api_key not in repr(value)
+                    assert body not in repr(value)
+
+    dumped = state.model_dump_json()
+    assert api_key not in dumped
+    assert body not in dumped
+    if state.error is not None:
+        assert api_key not in state.error["message"]
+        assert body not in state.error["message"]
+        public = public_error(state.error)
+        assert public["message"] in PUBLIC_MESSAGES
+        assert public["failedNode"] == state.error["failedNode"]

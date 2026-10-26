@@ -34,6 +34,7 @@ from models import (
     SupportedLanguage,
 )
 from pipeline.state import PipelineState
+from public_errors import WRITER_MESSAGE
 from sessions import Session, SessionStatus
 
 
@@ -180,7 +181,8 @@ def test_error_session_returns_error_shape_without_result():
     status, payload = _call_get("/sessions/err-1/result")
     assert status == 200, payload
     assert payload["status"] == "error"
-    assert payload["error"] == {"failedNode": "writer", "message": "generation failed"}
+    # The internal detail is replaced by the fixed friendly message.
+    assert payload["error"] == {"failedNode": "writer", "message": WRITER_MESSAGE}
     # Writer is node-fatal with no partial output: no summary present.
     assert "summaryEntries" not in payload
 

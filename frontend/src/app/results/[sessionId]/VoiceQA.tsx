@@ -52,6 +52,7 @@ import { ApiError, ask, type SupportedLanguage } from "@/lib/api";
 import ReadAloudButton from "./ReadAloudButton";
 import { useReadAloud } from "./readAloud";
 import type { Dictionary } from "@/i18n/dictionary";
+import { clientErrorDetail } from "@/i18n/errors";
 import { useT } from "@/i18n/uiLanguage";
 
 /** Map a SupportedLanguage to the BCP-47 tag for speech recognition. */
@@ -407,7 +408,7 @@ export default function VoiceQA({
       appendMessage({
         role: "error",
         text:
-          err instanceof ApiError && err.status !== 429 ? err.message : null,
+          err instanceof ApiError && err.status === 429 ? null : clientErrorDetail(err),
         demoLimit: err instanceof ApiError && err.status === 429,
       });
       setQuestion((prev) => prev || q);

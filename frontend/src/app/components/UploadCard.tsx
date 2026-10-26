@@ -30,6 +30,7 @@ import {
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@/lib/api";
+import { clientErrorDetail } from "@/i18n/errors";
 import { useT, useUiLanguage } from "@/i18n/uiLanguage";
 
 /** Accept a dropped/selected file only if it looks like a PDF. */
@@ -136,7 +137,9 @@ export default function UploadCard() {
         err instanceof ApiError
           ? err.status === 429
             ? { kind: "demoLimit" }
-            : { kind: "server", message: err.message }
+            : clientErrorDetail(err) !== null
+              ? { kind: "server", message: err.message }
+              : { kind: "failed" }
           : { kind: "failed" },
       );
       setPending(false);
