@@ -13,11 +13,11 @@
 import { useCallback, useId, useState } from "react";
 import { ChevronDown, Info, Languages, LoaderCircle, RotateCcw } from "lucide-react";
 import {
-  ApiError,
   SUPPORTED_LANGUAGES,
   translateLetter,
   type SupportedLanguage,
 } from "@/lib/api";
+import { clientErrorDetail } from "@/i18n/errors";
 import { useT } from "@/i18n/uiLanguage";
 import ReadAloudButton from "./ReadAloudButton";
 
@@ -55,7 +55,7 @@ export default function LetterTranslation({
       } catch (err) {
         setState({
           kind: "error",
-          message: err instanceof ApiError ? err.message : null,
+          message: clientErrorDetail(err),
         });
       }
     },

@@ -54,6 +54,7 @@ from typing import Any, Optional
 
 from config import load_config
 from llm.provider import LLMProvider, build_provider
+from public_errors import log_node_error, logger, public_error
 from pipeline.graph import NODE_ORDER, TOTAL_NODES, run_pipeline
 from pipeline.state import NodeStatus, PipelineState
 from models import SupportedLanguage
@@ -202,7 +203,9 @@ def _make_progress_bridge(
     def _on_progress(node_name: str, status: NodeStatus, state: PipelineState) -> None:
         if status == NodeStatus.ERROR:
             err = state.error or {"failedNode": node_name, "message": "node failed"}
-            _put(("node_error", dict(err)))
+            # Detail goes to the server log; clients get a fixed friendly message.
+            log_node_error(state.session_id, err)
+            _put(("node_error", public_error(err)))
             return
         if status in (NodeStatus.RUNNING, NodeStatus.COMPLETED):
             _put(("progress", _progress_event(state)))
@@ -239,9 +242,10 @@ async def _run_session_pipeline(session: Session) -> None:
     except Exception as exc:  # defensive: never drop a background exception
         # Record a node-fatal-shaped error if the runner itself blew up before
         # setting one. The API key is never part of these messages.
+        logger.exception("Pipeline crashed: session=%s", session.id)
         if state.error is None:
             state.error = {"failedNode": "pipeline", "message": str(exc)}
-            session.queue.put_nowait(("node_error", dict(state.error)))
+            session.queue.put_nowait(("node_error", public_error(state.error)))
         session.status = SessionStatus.ERROR
     finally:
         # Terminal sentinel always lands last so consumers can stop draining.

@@ -57,6 +57,7 @@ import {
   type ResultProgress,
 } from "@/lib/api";
 import type { Dictionary } from "@/i18n/dictionary";
+import { nodeErrorMessage } from "@/i18n/errors";
 import { useT } from "@/i18n/uiLanguage";
 
 /**
@@ -410,9 +411,10 @@ export default function ProgressView({ sessionId }: { sessionId: string }) {
             <p className="text-sm text-navy-700">
               {t.progress.problemDuring(nodeLabel(t, view.error.failedNode))}
             </p>
-            {view.error.message ? (
-              <p className="text-sm text-navy-500">{view.error.message}</p>
-            ) : null}
+            {/* Translated by failed node; backend error text is never shown. */}
+            <p className="text-sm text-navy-500">
+              {nodeErrorMessage(t, view.error.failedNode)}
+            </p>
           </div>
         </div>
       ) : view.kind === "interrupted" ? (

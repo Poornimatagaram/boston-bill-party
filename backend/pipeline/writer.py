@@ -39,10 +39,13 @@ injected provider holds the key; nothing here logs request/response bodies.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
 from models import AnalysisResult, Finding, SupportedLanguage
+
+logger = logging.getLogger("boston_bill_party")
 
 # Shared node id. Mirrors ``config.NodeName.WRITER`` ("writer"); kept as a plain
 # string here so the module imports without a hard dependency on config.py.
@@ -220,9 +223,12 @@ def _call_provider(provider: LLMProvider, *, system: str, user: str, what: str) 
     except WriterError:
         raise
     except Exception as exc:  # provider error / timeout => generation failure
-        raise WriterError(
-            message=f"Writer failed to generate the {what}: {exc}"
-        ) from exc
+        # Provider detail goes to the server log only; the message is fixed so
+        # no provider text reaches the state or the user.
+        logger.warning(
+            "Writer provider call failed (%s): %s: %s", what, type(exc).__name__, exc
+        )
+        raise WriterError(message=f"Writer failed to generate the {what}.") from exc
     return _require_text(completion, what)
 
 

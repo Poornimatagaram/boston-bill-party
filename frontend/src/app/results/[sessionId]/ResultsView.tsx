@@ -22,8 +22,9 @@
  *  - A single explicit "Confirm" control (Req 8.5) is the ONLY transmit
  *    trigger; it POSTs the CURRENT edited text via confirmLetter (Req 8.6, 8.7).
  *  - No Appeal_Letter (no credible issues, Req 7.4) -> no editor or confirm.
- *  - On a Writer/node `error`, show the failed-node message plus a RETRY action
- *    that re-fetches WITHOUT discarding any Summary already produced (Req 8.2).
+ *  - On a Writer/node `error`, show ONLY an error card (translated, by failed
+ *    node) with a START OVER link back to the upload card. No issue count, Summary, or
+ *    tabs are shown, and backend error text is never displayed.
  *
  * Static UI text follows the header's UI language. Client-side fallback error
  * messages are stored as flags/null and resolved at render for the same reason;
@@ -62,6 +63,7 @@ import {
   type SupportedLanguage,
 } from "@/lib/api";
 import type { Dictionary } from "@/i18n/dictionary";
+import { clientErrorDetail, nodeErrorMessage } from "@/i18n/errors";
 import { useT } from "@/i18n/uiLanguage";
 import IssueCard, { findingMeta } from "./IssueCard";
 import LetterActions from "./LetterActions";
@@ -175,10 +177,6 @@ export default function ResultsView({
   );
   const letterSeededRef = useRef(example !== undefined);
 
-  // Bumped by the Retry action to re-run the load effect without discarding the
-  // Summary we already show (the effect seeds state but never clears `letter`).
-  const [reloadToken, setReloadToken] = useState(0);
-
   useEffect(() => {
     // Example mode is fully static: never poll the backend.
     if (example) return;
@@ -243,23 +241,14 @@ export default function ResultsView({
         setLoad({
           kind: "failed",
           notFound: err instanceof ApiError && err.status === 404,
-          message: err instanceof ApiError ? err.message : null,
+          message: clientErrorDetail(err),
         });
       }
     }
 
     poll();
     return stop;
-  }, [sessionId, reloadToken, example]);
-
-  // Retry after a writer/node error: re-fetch status WITHOUT discarding the
-  // Summary we already display (Req 8.2). The letter is only seeded once, so
-  // prior edits survive too.
-  const handleRetry = useCallback(() => {
-    setConfirm({ kind: "idle" });
-    setLoad((prev) => (prev.kind === "error" ? { kind: "loading" } : prev));
-    setReloadToken((token) => token + 1);
-  }, []);
+  }, [sessionId, example]);
 
   // The ONLY transmit trigger (Req 8.5): send the CURRENT edited text (Req 8.6,
   // 8.7). Never fired on blur/navigation.
@@ -278,7 +267,7 @@ export default function ResultsView({
     } catch (err) {
       setConfirm({
         kind: "error",
-        message: err instanceof ApiError ? err.message : null,
+        message: clientErrorDetail(err),
       });
     }
   }, [sessionId, letter, example]);
@@ -343,10 +332,43 @@ export default function ResultsView({
     );
   }
 
-  // Both `loaded` and `error` have a Summary we can render. For `error` we also
-  // show the failed-node message and a Retry action (Req 8.2).
-  const result = load.kind === "loaded" ? load.result : load.partial;
-  const isError = load.kind === "error";
+  // A failed analysis shows only the error card with Retry: no issue count,
+  // Summary, tabs, or chat, so "0 issues found" never appears beside an error.
+  if (load.kind === "error") {
+    return (
+      <section
+        role="alert"
+        className="flex flex-col gap-4 rounded-3xl border border-coral-200 bg-coral-50 p-6 shadow-card sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div className="flex gap-3">
+          <TriangleAlert
+            className="mt-0.5 h-5 w-5 shrink-0 text-coral-600"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col gap-1">
+            <p className="text-base font-semibold text-coral-800">
+              {t.progress.stoppedTitle}
+            </p>
+            <p className="text-sm text-navy-700">
+              {t.progress.problemDuring(nodeLabel(t, load.error.failedNode))}
+            </p>
+            <p className="text-sm text-navy-600">
+              {nodeErrorMessage(t, load.error.failedNode)}
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/#upload"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-700 px-4 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-card hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+          {t.results.startOver}
+        </Link>
+      </section>
+    );
+  }
+
+  const result = load.result;
   const issueCount = result.findings.length;
   const breakdown = countByType(result.findings);
   const hasLetter = letter !== null && result.appealLetter !== null;
@@ -373,40 +395,6 @@ export default function ResultsView({
               {t.example.tryOwn}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-          </section>
-        ) : null}
-
-        {isError ? (
-          <section
-            role="alert"
-            className="flex flex-col gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex gap-3">
-              <TriangleAlert
-                className="mt-0.5 h-5 w-5 shrink-0 text-coral-600"
-                aria-hidden="true"
-              />
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-coral-800">
-                  {t.results.letterFailedTitle}
-                </p>
-                <p className="text-sm text-navy-700">
-                  {t.progress.problemDuring(nodeLabel(t, load.error.failedNode))}
-                </p>
-                {load.error.message ? (
-                  <p className="text-sm text-navy-500">{load.error.message}</p>
-                ) : null}
-                <p className="text-xs text-navy-500">{t.results.keptWhileRetry}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-700 px-4 py-2 text-sm font-semibold text-white shadow-card hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
-            >
-              <RotateCcw className="h-4 w-4" aria-hidden="true" />
-              {t.results.retry}
-            </button>
           </section>
         ) : null}
 
@@ -729,12 +717,6 @@ export default function ResultsView({
                 <LetterActions letter={letter} />
               ) : null}
             </section>
-          ) : isError ? (
-            <EmptyState
-              icon={TriangleAlert}
-              title={t.letter.unavailableTitle}
-              body={t.letter.unavailableBody}
-            />
           ) : (
             <EmptyState
               icon={CircleCheck}
