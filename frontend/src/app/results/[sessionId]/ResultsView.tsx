@@ -23,7 +23,7 @@
  *    trigger; it POSTs the CURRENT edited text via confirmLetter (Req 8.6, 8.7).
  *  - No Appeal_Letter (no credible issues, Req 7.4) -> no editor or confirm.
  *  - On a Writer/node `error`, show ONLY an error card (translated, by failed
- *    node) with a RETRY action that re-fetches. No issue count, Summary, or
+ *    node) with a START OVER link back to the upload card. No issue count, Summary, or
  *    tabs are shown, and backend error text is never displayed.
  *
  * Static UI text follows the header's UI language. Client-side fallback error
@@ -177,10 +177,6 @@ export default function ResultsView({
   );
   const letterSeededRef = useRef(example !== undefined);
 
-  // Bumped by the Retry action to re-run the load effect without discarding the
-  // Summary we already show (the effect seeds state but never clears `letter`).
-  const [reloadToken, setReloadToken] = useState(0);
-
   useEffect(() => {
     // Example mode is fully static: never poll the backend.
     if (example) return;
@@ -252,16 +248,7 @@ export default function ResultsView({
 
     poll();
     return stop;
-  }, [sessionId, reloadToken, example]);
-
-  // Retry after a writer/node error: re-fetch status WITHOUT discarding the
-  // Summary we already display (Req 8.2). The letter is only seeded once, so
-  // prior edits survive too.
-  const handleRetry = useCallback(() => {
-    setConfirm({ kind: "idle" });
-    setLoad((prev) => (prev.kind === "error" ? { kind: "loading" } : prev));
-    setReloadToken((token) => token + 1);
-  }, []);
+  }, [sessionId, example]);
 
   // The ONLY transmit trigger (Req 8.5): send the CURRENT edited text (Req 8.6,
   // 8.7). Never fired on blur/navigation.
@@ -370,14 +357,13 @@ export default function ResultsView({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleRetry}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-700 px-4 py-2 text-sm font-semibold text-white shadow-card hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+        <Link
+          href="/#upload"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-700 px-4 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-card hover:bg-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
         >
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
-          {t.results.retry}
-        </button>
+          {t.results.startOver}
+        </Link>
       </section>
     );
   }

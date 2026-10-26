@@ -96,27 +96,32 @@ export default function HomeContent({ hasHeroImage }: { hasHeroImage: boolean })
             <p className="max-w-xl text-base leading-relaxed text-navy-600 sm:text-lg">
               {t.hero.subtitle}
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {/* CTA row: labels stay on one line; the two buttons share a fixed
+                height and size to their content. Under 640px they stack
+                full-width. Wraps (rather than overflowing) on narrow desktop
+                columns with long translations. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <a
                 href="#upload"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-navy-700 via-navy-600 to-teal-600 px-6 py-3.5 text-base font-semibold text-white shadow-card-lg transition-all hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 focus-visible:ring-offset-2"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-navy-700 via-navy-600 to-teal-600 px-6 text-base font-semibold whitespace-nowrap text-white shadow-card-lg transition-all hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 focus-visible:ring-offset-2 sm:w-auto"
               >
                 {t.hero.cta}
-                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
               </a>
               {/* Instant demo: a bundled, saved analysis (no backend calls). */}
               <Link
                 href="/example"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-300 bg-white/90 px-5 py-3.5 text-sm font-semibold text-teal-800 shadow-sm transition-colors hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-teal-300 bg-white/90 px-5 text-base font-semibold whitespace-nowrap text-teal-800 shadow-sm transition-colors hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 sm:w-auto"
               >
-                <Eye className="h-4 w-4" aria-hidden="true" />
+                <Eye className="h-5 w-5 shrink-0" aria-hidden="true" />
                 {t.hero.exampleCta}
               </Link>
               <a
                 href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-semibold text-navy-700 transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+                className="inline-flex min-h-11 items-center justify-center gap-1 self-center rounded-md px-1 text-sm font-semibold whitespace-nowrap text-navy-700 underline-offset-4 transition-colors hover:text-teal-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 sm:self-auto"
               >
                 {t.hero.secondary}
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
               </a>
             </div>
             <p className="flex items-center gap-2 text-xs text-navy-500">
