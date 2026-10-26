@@ -36,8 +36,8 @@ PDF ──► Extractor ──► Auditor ──► Rights Checker ──► Ske
 
 | Layer | Stack |
 | --- | --- |
-| Backend | Python 3.11+, FastAPI, Pydantic v2, pdfplumber, rank-bm25 |
-| Pipeline | Explicit sequential runner with LangGraph-compatible `(state) -> state` nodes (`backend/pipeline/graph.py`) |
+| Backend | Python 3.11+ (deployed on 3.14), FastAPI, Pydantic v2, pdfplumber, rank-bm25 |
+| Pipeline | Compiled LangGraph `StateGraph` (`backend/pipeline/graph.py`) |
 | LLM | Pluggable `LLMProvider` (Anthropic by default), configured in `backend/.env` |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, lucide-react |
 | Tests | pytest + Hypothesis property-based tests |
@@ -112,7 +112,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000> and upload a bill from `backend/eval/eval_set/` (all synthetic).
+Open <http://localhost:3000> and press **Try a sample bill**, or upload a bill from `backend/eval/eval_set/` (all synthetic).
 
 **Tests**
 
@@ -120,6 +120,38 @@ Open <http://localhost:3000> and upload a bill from `backend/eval/eval_set/` (al
 cd backend && .venv/bin/python -m pytest -q
 cd frontend && npx tsc --noEmit && npm run lint && npm run build
 ```
+
+## Deploy
+
+The backend runs on Render (`render.yaml` at the repo root, Python 3.14.3). The frontend is a standard Next.js app; the steps below use Vercel, but any Next.js host works.
+
+**1. Backend on Render**
+
+1. Push the repo to GitHub.
+2. In the Render Dashboard, choose **New → Blueprint** and select the repo. Render reads `render.yaml` and creates the `boston-bill-party-api` web service (root `backend/`, `pip install -r requirements.txt`, `uvicorn main:app --host 0.0.0.0 --port $PORT`).
+3. When prompted, set the values marked `sync: false`:
+   - `LLM_API_KEY`: your provider key (stored only in Render, never in the repo).
+   - `LLM_MODEL`: the model name.
+   - `ALLOWED_ORIGINS`: your frontend URL, e.g. `https://your-app.vercel.app`. Separate several with commas. If unset, only `http://localhost:3000` is allowed.
+4. Deploy, then note the service URL (e.g. `https://boston-bill-party-api.onrender.com`).
+
+**2. Frontend**
+
+1. Import the repo into Vercel with **Root Directory** `frontend`.
+2. Set `NEXT_PUBLIC_API_BASE_URL` to the Render service URL and deploy.
+3. If the frontend URL changed, update `ALLOWED_ORIGINS` on Render.
+
+**Cost protection (demo limits)**
+
+The public demo limits LLM spend. When a limit is hit, the API returns `429` and the UI shows a "demo limit reached" message.
+
+| Limit | Default | Configure |
+| --- | --- | --- |
+| Bill analyses per IP | 5 per hour | `rate_limit.py` |
+| Chat questions per IP | 20 per hour | `rate_limit.py` |
+| Bill analyses, all visitors | 50 per UTC day | `MAX_DAILY_ANALYSES` env var |
+
+Counters live in memory, like sessions: they reset when the service restarts and assume a single instance. Client IPs come from `X-Forwarded-For`, which a determined client can spoof, so the daily cap is the hard backstop.
 
 ## What's next
 

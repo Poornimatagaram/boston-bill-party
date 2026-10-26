@@ -155,6 +155,67 @@ def _resolve_source(env: Optional[Mapping[str, str]]) -> dict[str, str]:
     return merged
 
 
+def get_setting(name: str, env: Optional[Mapping[str, str]] = None) -> Optional[str]:
+    """Return a non-secret deployment setting, or ``None`` when unset/blank.
+
+    Resolution matches :func:`load_config`: an explicit ``env`` mapping is used
+    verbatim; otherwise ``os.environ`` wins over ``backend/.env``. Used for
+    settings such as ``ALLOWED_ORIGINS`` and ``MAX_DAILY_ANALYSES``.
+    """
+    if env is not None:
+        value = env.get(name)
+    elif name in os.environ:
+        value = os.environ[name]
+    else:
+        value = parse_env_file(ENV_PATH).get(name)
+    if value is None or not value.strip():
+        return None
+    return value.strip()
+
+
+# Default CORS origin: the local Next.js dev server.
+DEFAULT_ALLOWED_ORIGINS: tuple[str, ...] = ("http://localhost:3000",)
+
+
+def load_allowed_origins(env: Optional[Mapping[str, str]] = None) -> list[str]:
+    """Parse ``ALLOWED_ORIGINS`` (comma-separated) into a CORS origin list.
+
+    Blank entries and trailing slashes are dropped (browsers send origins with
+    no trailing slash). Falls back to ``http://localhost:3000`` when unset.
+    """
+    raw = get_setting("ALLOWED_ORIGINS", env)
+    if raw is None:
+        return list(DEFAULT_ALLOWED_ORIGINS)
+    origins = [part.strip().rstrip("/") for part in raw.split(",")]
+    origins = [o for o in origins if o]
+    return origins or list(DEFAULT_ALLOWED_ORIGINS)
+
+
+# Default global cap on bill analyses per UTC day (cost protection).
+DEFAULT_MAX_DAILY_ANALYSES = 50
+
+
+def load_max_daily_analyses(env: Optional[Mapping[str, str]] = None) -> int:
+    """Return ``MAX_DAILY_ANALYSES`` as a non-negative int (default 50).
+
+    Raises:
+        ConfigError: when the value is not a whole number >= 0. The message
+            names the variable only.
+    """
+    raw = get_setting("MAX_DAILY_ANALYSES", env)
+    if raw is None:
+        return DEFAULT_MAX_DAILY_ANALYSES
+    try:
+        value = int(raw)
+    except ValueError:
+        value = -1
+    if value < 0:
+        raise ConfigError(
+            "Invalid MAX_DAILY_ANALYSES value. Use a whole number of 0 or more."
+        )
+    return value
+
+
 def load_config(env: Optional[Mapping[str, str]] = None) -> LLMConfig:
     """Load and validate the LLM provider configuration (Req 11.1, 11.2, 11.3, 11.5).
 

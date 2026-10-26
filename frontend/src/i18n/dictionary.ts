@@ -87,6 +87,13 @@ const en = {
     failed: "Upload failed. Please try again.",
     uploading: "Uploading…",
     analyze: "Analyze bill",
+    noPdf: "No PDF handy?",
+    trySample: "Try a sample bill",
+    loadingSample: "Loading sample…",
+    sampleFailed: "We couldn't load the sample bill. Please try again.",
+    selected: (name: string) => `Selected file: ${name}`,
+    demoLimit:
+      "Demo limit reached. This free demo limits how many bills can be analyzed to keep costs down. Please try again later.",
   },
   about: {
     title: "About Boston Bill Party",
@@ -282,6 +289,8 @@ const en = {
     placeholderListening: "Listening…",
     send: "Send question",
     answerFailed: "We couldn't retrieve an answer. Please try again.",
+    demoLimit:
+      "Demo limit reached. This free demo limits how many questions can be asked per hour. Please try again later.",
   },
 };
 
@@ -361,6 +370,13 @@ const es: Dictionary = {
     failed: "No se pudo subir. Inténtalo de nuevo.",
     uploading: "Subiendo…",
     analyze: "Analizar factura",
+    noPdf: "¿No tienes un PDF a mano?",
+    trySample: "Probar una factura de ejemplo",
+    loadingSample: "Cargando ejemplo…",
+    sampleFailed: "No pudimos cargar la factura de ejemplo. Inténtalo de nuevo.",
+    selected: (name: string) => `Archivo seleccionado: ${name}`,
+    demoLimit:
+      "Se alcanzó el límite de la demostración. Esta demo gratuita limita cuántas facturas se pueden analizar para controlar los costos. Inténtalo más tarde.",
   },
   about: {
     title: "Acerca de Boston Bill Party",
@@ -557,6 +573,8 @@ const es: Dictionary = {
     placeholderListening: "Escuchando…",
     send: "Enviar pregunta",
     answerFailed: "No pudimos obtener una respuesta. Inténtalo de nuevo.",
+    demoLimit:
+      "Se alcanzó el límite de la demostración. Esta demo gratuita limita cuántas preguntas se pueden hacer por hora. Inténtalo más tarde.",
   },
 };
 
@@ -634,6 +652,13 @@ const pt: Dictionary = {
     failed: "Falha no envio. Tente novamente.",
     uploading: "Enviando…",
     analyze: "Analisar conta",
+    noPdf: "Não tem um PDF à mão?",
+    trySample: "Experimentar uma conta de exemplo",
+    loadingSample: "Carregando exemplo…",
+    sampleFailed: "Não foi possível carregar a conta de exemplo. Tente novamente.",
+    selected: (name: string) => `Arquivo selecionado: ${name}`,
+    demoLimit:
+      "Limite da demonstração atingido. Esta demo gratuita limita quantas contas podem ser analisadas para controlar os custos. Tente novamente mais tarde.",
   },
   about: {
     title: "Sobre o Boston Bill Party",
@@ -831,6 +856,8 @@ const pt: Dictionary = {
     placeholderListening: "Ouvindo…",
     send: "Enviar pergunta",
     answerFailed: "Não foi possível obter uma resposta. Tente novamente.",
+    demoLimit:
+      "Limite da demonstração atingido. Esta demo gratuita limita quantas perguntas podem ser feitas por hora. Tente novamente mais tarde.",
   },
 };
 
@@ -908,6 +935,13 @@ const ht: Dictionary = {
     failed: "Nou pa t ka voye l. Tanpri eseye ankò.",
     uploading: "N ap voye l…",
     analyze: "Analize bòdwo a",
+    noPdf: "Ou pa gen yon PDF sou ou?",
+    trySample: "Eseye yon bòdwo egzanp",
+    loadingSample: "N ap chaje egzanp lan…",
+    sampleFailed: "Nou pa t ka chaje bòdwo egzanp lan. Tanpri eseye ankò.",
+    selected: (name: string) => `Fichye ou chwazi a: ${name}`,
+    demoLimit:
+      "Ou rive nan limit demo a. Demo gratis sa a limite konbyen bòdwo yo ka analize pou kenbe depans yo ba. Tanpri eseye ankò pita.",
   },
   about: {
     title: "Konsènan Boston Bill Party",
@@ -1100,6 +1134,8 @@ const ht: Dictionary = {
     placeholderListening: "M ap koute…",
     send: "Voye kesyon an",
     answerFailed: "Nou pa t ka jwenn yon repons. Tanpri eseye ankò.",
+    demoLimit:
+      "Ou rive nan limit demo a. Demo gratis sa a limite konbyen kesyon yo ka poze chak èdtan. Tanpri eseye ankò pita.",
   },
 };
 

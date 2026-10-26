@@ -1,0 +1,26 @@
+# Render Blueprint for the Boston Bill Party backend.
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: boston-bill-party-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Same interpreter the test suite is verified on.
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: LLM_PROVIDER
+        value: anthropic
+      # Secrets and deployment-specific values: set in the Dashboard.
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      # Comma-separated frontend origin(s), e.g. https://your-app.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MAX_DAILY_ANALYSES
+        value: "50"
