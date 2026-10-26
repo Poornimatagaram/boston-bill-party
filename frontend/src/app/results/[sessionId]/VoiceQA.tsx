@@ -173,7 +173,12 @@ type MicState =
 type ChatMessage =
   | { id: number; role: "user" | "assistant"; text: string }
   // `text` is a backend detail; null means "use the localized fallback".
-  | { id: number; role: "error"; text: string | null };
+  // `demoLimit` marks the backend's 429 demo limit (localized at render).
+  | { id: number; role: "error"; text: string | null; demoLimit?: boolean };
+
+type NewChatMessage =
+  | Omit<Extract<ChatMessage, { role: "user" | "assistant" }>, "id">
+  | Omit<Extract<ChatMessage, { role: "error" }>, "id">;
 
 /** Map a recognition error code to a user-facing transcription message. */
 function transcriptionErrorMessage(t: Dictionary, code: string): string {
@@ -227,7 +232,7 @@ export default function VoiceQA({
 
   const { activeId: speakingId, stop: stopSpeaking } = useReadAloud();
 
-  const appendMessage = useCallback((message: Omit<ChatMessage, "id">) => {
+  const appendMessage = useCallback((message: NewChatMessage) => {
     const id = nextMessageIdRef.current;
     nextMessageIdRef.current += 1;
     setMessages((prev) => [...prev, { ...message, id } as ChatMessage]);
@@ -398,9 +403,12 @@ export default function VoiceQA({
     } catch (err) {
       // Answer error/timeout: shown in the thread; earlier answers stay
       // (Req 10.7). Restore the question so the user can resend it.
+      // A 429 is the demo limit: shown as a localized message at render.
       appendMessage({
         role: "error",
-        text: err instanceof ApiError ? err.message : null,
+        text:
+          err instanceof ApiError && err.status !== 429 ? err.message : null,
+        demoLimit: err instanceof ApiError && err.status === 429,
       });
       setQuestion((prev) => prev || q);
     } finally {
@@ -520,7 +528,9 @@ export default function VoiceQA({
                     role="alert"
                     className="max-w-[85%] rounded-2xl rounded-bl-md border border-coral-200 bg-coral-50 px-3.5 py-2.5 text-sm text-coral-800"
                   >
-                    {m.text ?? t.chat.answerFailed}
+                    {"demoLimit" in m && m.demoLimit
+                      ? t.chat.demoLimit
+                      : (m.text ?? t.chat.answerFailed)}
                   </p>
                 </div>
               ),

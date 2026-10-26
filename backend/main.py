@@ -47,13 +47,20 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator, Optional
 
 import pdfplumber
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+import rate_limit
 import sessions
-from config import ConfigError, NodeName, load_config
+from config import (
+    ConfigError,
+    NodeName,
+    load_allowed_origins,
+    load_config,
+    load_max_daily_analyses,
+)
 from eval.harness import EmptyEvalSetError, run_evaluation
 from models import SupportedLanguage
 from pipeline.writer import translate_letter
@@ -92,8 +99,9 @@ TRANSLATE_TIMEOUT_SECONDS = 60.0
 # Truthy string values accepted for the synthetic-data marker (Req 12.2).
 _TRUTHY = {"true", "1", "yes", "on"}
 
-# Frontend dev origin permitted by CORS so the Next.js client can call the API.
-ALLOWED_ORIGINS = ["http://localhost:3000"]
+# Origins permitted by CORS: ALLOWED_ORIGINS (comma-separated) from the
+# environment or backend/.env, defaulting to the local Next.js dev server.
+ALLOWED_ORIGINS = load_allowed_origins()
 
 
 def _is_pdf_upload(upload: UploadFile) -> bool:
@@ -180,6 +188,8 @@ async def lifespan(app: FastAPI):
     """
     try:
         load_config()
+        # Fail fast on a malformed cost-protection cap.
+        load_max_daily_analyses()
     except ConfigError:
         # Re-raise so a real deployment aborts startup (Req 11.2/11.3). The
         # ConfigError message already names the offending variables and never
@@ -199,8 +209,18 @@ app.add_middleware(
 )
 
 
+@app.get("/health")
+async def health():
+    """Liveness check for the frontend's cold-start ping.
+
+    Cheap by design: no LLM call, no knowledge-base build, no config details.
+    """
+    return {"status": "ok"}
+
+
 @app.post("/sessions")
 async def create_session_endpoint(
+    request: Request,
     pdf: UploadFile = File(...),
     language: str = Form(...),
     synthetic: Optional[str] = Form(default=None),
@@ -250,6 +270,11 @@ async def create_session_endpoint(
 
     # 5. Language (Req 1.4) — validate against SupportedLanguage.
     selected_language = _parse_language(language)
+
+    # 6. Cost protection: per-IP hourly limit and global daily cap. Checked
+    # last so rejected uploads never use up a visitor's quota.
+    if not rate_limit.limiter.allow_analysis(rate_limit.client_ip(request)):
+        raise rate_limit.demo_limit_error()
 
     # Accepted: start the session (background pipeline) and return fast (Req 1.7).
     session_id = create_session(io.BytesIO(data), selected_language)
@@ -580,7 +605,7 @@ def _build_ask_context(session) -> str:
 
 
 @app.post("/sessions/{session_id}/ask")
-async def ask_question_endpoint(session_id: str, body: AskRequest):
+async def ask_question_endpoint(session_id: str, body: AskRequest, request: Request):
     """Answer a question about the analyzed bill (Req 10.3, 10.6, 10.7).
 
     Validation and error model (chosen to fit the frontend ``ask()`` contract,
@@ -652,6 +677,11 @@ async def ask_question_endpoint(session_id: str, body: AskRequest):
             detail="The bill analysis is not ready yet. Try again shortly.",
         )
 
+    # Cost protection: 20 questions per IP per hour (counted only once the
+    # question is valid and answerable).
+    if not rate_limit.limiter.allow_question(rate_limit.client_ip(request)):
+        raise rate_limit.demo_limit_error()
+
     system = _build_ask_context(session)
     # Read get_provider off the module (not a bound import) so tests can
     # monkeypatch sessions.get_provider to inject a mock provider.
@@ -705,7 +735,9 @@ class TranslateLetterRequest(BaseModel):
 
 
 @app.post("/sessions/{session_id}/translate-letter")
-async def translate_letter_endpoint(session_id: str, body: TranslateLetterRequest):
+async def translate_letter_endpoint(
+    session_id: str, body: TranslateLetterRequest, request: Request
+):
     """Translate the English appeal letter into the session language.
 
     The appeal letter is always written in English (it is what gets sent). This
@@ -746,6 +778,10 @@ async def translate_letter_endpoint(session_id: str, body: TranslateLetterReques
                 f"The maximum is {MAX_LETTER_CHARS} characters."
             ),
         )
+
+    # Cost protection: 10 translations per IP per hour (valid requests only).
+    if not rate_limit.limiter.allow_translation(rate_limit.client_ip(request)):
+        raise rate_limit.demo_limit_error()
 
     provider = sessions.get_provider()
     try:

@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import {
   ArrowRight,
+  FileText,
   FileUp,
   Languages,
   LoaderCircle,
@@ -38,6 +39,10 @@ function isPdf(file: File): boolean {
     file.name.toLowerCase().endsWith(".pdf")
   );
 }
+
+/** Synthetic sample bill served from `public/samples/` (copied from the eval set). */
+const SAMPLE_BILL_URL = "/samples/bill_10.pdf";
+const SAMPLE_BILL_NAME = "sample_bill_10.pdf";
 
 export default function UploadCard() {
   const router = useRouter();
@@ -60,14 +65,46 @@ export default function UploadCard() {
   // Either a backend message, or a dictionary key for client-side errors so the
   // text follows the UI language.
   const [error, setError] = useState<
-    { kind: "server"; message: string } | { kind: "notPdf" | "failed" } | null
+    | { kind: "server"; message: string }
+    | { kind: "notPdf" | "failed" | "sampleFailed" | "demoLimit" }
+    | null
   >(null);
   const [dragging, setDragging] = useState(false);
+  const [loadingSample, setLoadingSample] = useState(false);
+  const busy = pending || loadingSample;
 
   const pickFile = useCallback((next: File | null) => {
     setFile(next);
     setError(null);
   }, []);
+
+  // Load the bundled synthetic bill so visitors can try the app without a PDF.
+  // It only selects the file; the user still presses Analyze.
+  async function loadSample() {
+    if (busy) return;
+    setLoadingSample(true);
+    setError(null);
+    try {
+      const res = await fetch(SAMPLE_BILL_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const sample = new File([blob], SAMPLE_BILL_NAME, {
+        type: "application/pdf",
+      });
+      // Mirror the file into the native (required) input so form validation
+      // treats it like a browsed file.
+      if (inputRef.current) {
+        const transfer = new DataTransfer();
+        transfer.items.add(sample);
+        inputRef.current.files = transfer.files;
+      }
+      pickFile(sample);
+    } catch {
+      setError({ kind: "sampleFailed" });
+    } finally {
+      setLoadingSample(false);
+    }
+  }
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -97,7 +134,9 @@ export default function UploadCard() {
     } catch (err) {
       setError(
         err instanceof ApiError
-          ? { kind: "server", message: err.message }
+          ? err.status === 429
+            ? { kind: "demoLimit" }
+            : { kind: "server", message: err.message }
           : { kind: "failed" },
       );
       setPending(false);
@@ -111,7 +150,11 @@ export default function UploadCard() {
         ? error.message
         : error.kind === "notPdf"
           ? t.upload.notPdf
-          : t.upload.failed;
+          : error.kind === "sampleFailed"
+            ? t.upload.sampleFailed
+            : error.kind === "demoLimit"
+              ? t.upload.demoLimit
+              : t.upload.failed;
 
   return (
     <form
@@ -196,6 +239,27 @@ export default function UploadCard() {
           onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
           className="sr-only"
         />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-navy-500">{t.upload.noPdf}</span>
+          <button
+            type="button"
+            onClick={loadSample}
+            disabled={busy}
+            aria-busy={loadingSample}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-teal-300 bg-white px-4 py-2 text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingSample ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <FileText className="h-4 w-4" aria-hidden="true" />
+            )}
+            {loadingSample ? t.upload.loadingSample : t.upload.trySample}
+          </button>
+        </div>
+        {/* Announces the selected file (browsed, dropped, or sample). */}
+        <p className="sr-only" aria-live="polite">
+          {file ? t.upload.selected(file.name) : ""}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

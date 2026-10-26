@@ -9,6 +9,7 @@
 import {
   ArrowRight,
   Bot,
+  Eye,
   FileCheck2,
   FileUp,
   HeartPulse,
@@ -20,8 +21,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useT } from "@/i18n/uiLanguage";
+import Link from "next/link";
 import HeroVisual from "./HeroVisual";
 import UploadCard from "./UploadCard";
+import WakeBanner from "./WakeBanner";
 
 /**
  * Per-step visuals. Each icon tile sets a solid background color as well as
@@ -59,6 +62,7 @@ export default function HomeContent({ hasHeroImage }: { hasHeroImage: boolean })
 
   return (
     <main className="flex flex-1 flex-col">
+      <WakeBanner />
       {/* ------------------------------------------------------------ Hero */}
       <section className="relative overflow-hidden">
         <div
@@ -100,6 +104,14 @@ export default function HomeContent({ hasHeroImage }: { hasHeroImage: boolean })
                 {t.hero.cta}
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </a>
+              {/* Instant demo: a bundled, saved analysis (no backend calls). */}
+              <Link
+                href="/example"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-300 bg-white/90 px-5 py-3.5 text-sm font-semibold text-teal-800 shadow-sm transition-colors hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+              >
+                <Eye className="h-4 w-4" aria-hidden="true" />
+                {t.hero.exampleCta}
+              </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-semibold text-navy-700 transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"

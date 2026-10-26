@@ -1,0 +1,167 @@
+{
+  "status": "completed",
+  "summaryEntries": [
+    "Your bill includes a chest X-ray charge (line L11) that has no readable dollar amount, so it wasn't counted in the total, and you should ask the provider to confirm what that charge should be before you pay.",
+    "Your bill lists the emergency department visit as $100.00, but two visits at $40.00 each should total $80.00, so you may be overcharged by $20.00 and should ask the provider to correct it before paying.",
+    "The billing statement charges $55.00 for a routine blood draw (venipuncture), but the listed quantity of 1 at $30.00 each works out to $30.00, so you may have been overcharged by $25.00 and should ask the provider to correct the line item.",
+    "Your bill appears to charge the same office visit twice (lines L3 and L4 both show code 99213, an established-patient office visit), so you may be paying for one visit that was only provided once.",
+    "Your bill appears to charge you twice for the same complete blood count test (code 85025), so it's worth asking the provider to check whether one of those charges should be removed.",
+    "Your bill includes a charge labeled \"Unlisted equipment charge\" (line 7) under a billing code that isn't on the list of recognized codes, so it's worth asking the provider or your insurer to explain exactly what was billed and to confirm it's valid before you pay it.",
+    "Your bill includes a charge labeled \"Unlisted facility charge\" (line 8) that uses a billing code, XX200, that doesn't match any recognized billing code, so it's worth asking the provider or your insurer to explain exactly what this charge is for and to confirm it is valid before you pay it.",
+    "A \"processing fee\" on line 9 of your bill has no billing code attached, which makes it hard to verify what the charge is for, so it's worth asking the provider or your insurer to explain it and show the code or service it corresponds to.",
+    "Your bill includes an \"Administrative fee\" (line 10) that has no billing code attached, so it's unclear what service it pays for and it's worth asking your provider or insurer to explain it or remove it.",
+    "You have the right to ask your hospital or provider for a fully itemized bill, which lists every service, medication, and supply with its own charge, so you can check for duplicate charges, unbundled services, or care you never received.",
+    "A possible patient-rights issue is that the bill may list the same service or supply twice under the same billing code and description for one visit, which could mean you were charged more than once for it and you have the right to dispute that and ask for a corrected statement.",
+    "A billing code on your bill that is missing, invalid, or does not match the service you received may be an error or overcharging, so you can ask your provider to explain or verify any code you do not recognize."
+  ],
+  "appealLetter": "[Date]\n\n[Patient Advocate Name]\n[Address]\n[Phone] | [Email]\n\n[Provider or Billing Office Name]\n[Billing Department Address]\n\nRe: Formal Dispute and Request for Review of Itemized Charges\nAccount Number: [Account Number]\nDate of Service: [Date of Service]\nPatient Name: [Patient Name]\n\nTo the Billing Department:\n\nOn behalf of the patient named above, I am writing to respectfully dispute several charges on the enclosed statement and to request a careful review and correction of the account. The patient values the care received and wants to resolve this matter accurately. Each concern is identified below in the order of the review findings.\n\n1. Line item L11, \"Chest X-ray two views,\" has no legible or valid amount and was excluded from the computed total. The patient disputes this charge as presented, and requests that the provider either state the correct amount with supporting documentation or remove the line item from the account.\n\n2. Line item L1, \"Emergency department visit,\" lists a quantity of 2 and a unit price of 40.00, which yields 80.00, yet the amount shown is 100.00. The patient disputes the $20.00 difference and requests that the extended amount be corrected to match the stated quantity and unit price, or that the provider document the basis for the higher figure.\n\n3. Line item L2, \"Routine venipuncture,\" lists a quantity of 1 and a unit price of 30.00, yet the amount shown is 55.00. The patient disputes the $25.00 difference and requests a corrected amount or a written explanation of the additional charge.\n\n4. Line items L3 and L4 both bear billing code 99213 and the description \"Office visit established patient\" for the same encounter. The patient disputes the second charge as an apparent duplicate and requests its removal, or documentation showing that two separate services were rendered.\n\n5. Line items L5 and L6 both bear billing code 85025 and the description \"Complete blood count\" for the same encounter. The patient disputes the second charge as an apparent duplicate and requests its removal, or documentation showing that two distinct tests were performed and medically ordered.\n\n6. Line item L7, \"Unlisted equipment charge,\" carries billing code XX100, which does not appear to be a recognized CPT, HCPCS, or revenue code. The patient requests a clear description of the specific equipment, the recognized code that applies, and the supporting documentation for this charge.\n\n7. Line item L8, \"Unlisted facility charge,\" carries billing code XX200, which does not appear to be a recognized billing code. The patient requests an explanation of what facility service this charge represents, the corresponding recognized code, and the basis for the amount billed.\n\n8. Line item L9, \"Processing fee,\" has no billing code. The patient disputes this charge because it cannot be matched to a service actually provided, and requests either its removal or a full explanation with the applicable code and the authority for charging it.\n\n9. Line item L10, \"Administrative fee,\" has no billing code. The patient disputes this charge because it cannot be verified as a medical service, and requests either its removal or a detailed written justification with the applicable code.\n\n10. The patient has the right to request and receive a fully itemized bill listing each service, procedure, medication, and supply as a separate line item with its individual charge and billing code. The statement as received does not meet that standard for the items identified above, and the patient formally requests a complete itemized statement for this account.\n\n11. Under the protection from duplicate charges described in the Massachusetts Patient Billing Rights reference summary, a patient should not be charged more than once for the same service. Because line items L3 and L4, and L5 and L6, appear to repeat the same codes and descriptions for a single encounter, the patient requests that the provider correct the account and issue a revised statement.\n\n12. Under the billing code standards described in the Massachusetts Patient Billing Rights reference summary, charges should carry recognized codes that correspond to the services actually provided. Several charges on this statement lack valid codes or use unrecognized codes, which may reflect billing error or upcoding. The patient asks the provider to explain or substantiate each code questioned above.\n\nI respectfully request that you review each item identified in this letter, correct any errors, and provide a revised, fully itemized statement. Please also place the disputed amounts on hold while the review is pending, and suspend any collection activity related to these items. I ask for a written response within 30 days of receipt of this letter. If the review confirms any charge, please provide the supporting documentation and the basis for it.\n\nThank you for your attention to this matter. Please direct all correspondence regarding this dispute to the contact information listed above.\n\nSincerely,\n\n[Patient Advocate Name]\n[Title or Relationship to Patient]\n[Signature]\n\nEnclosures: Copy of statement for Account Number [Account Number]",
+  "retainedFindings": [
+    {
+      "id": "math_error:unparseable:L11",
+      "type": "math_error",
+      "description": "Line item \"Chest X-ray two views\" has a missing or unparseable amount and was excluded from the computed total.",
+      "confidence": "0.95",
+      "line_item_ids": [
+        "L11"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "math_error:line_math:L1",
+      "type": "math_error",
+      "description": "Line item \"Emergency department visit\" has an amount of 100.00 that does not equal quantity (2) multiplied by unit price (40.00) = 80.00.",
+      "confidence": "0.95",
+      "line_item_ids": [
+        "L1"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "math_error:line_math:L2",
+      "type": "math_error",
+      "description": "Line item \"Routine venipuncture\" has an amount of 55.00 that does not equal quantity (1) multiplied by unit price (30.00) = 30.00.",
+      "confidence": "0.95",
+      "line_item_ids": [
+        "L2"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "duplicate_charge:L3+L4",
+      "type": "duplicate_charge",
+      "description": "2 line items share billing code \"99213\" and description \"Office visit established patient\", indicating a possible duplicate charge.",
+      "confidence": "0.80",
+      "line_item_ids": [
+        "L3",
+        "L4"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "duplicate_charge:L5+L6",
+      "type": "duplicate_charge",
+      "description": "2 line items share billing code \"85025\" and description \"Complete blood count\", indicating a possible duplicate charge.",
+      "confidence": "0.80",
+      "line_item_ids": [
+        "L5",
+        "L6"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "suspicious_code:unrecognized:L7",
+      "type": "suspicious_code",
+      "description": "Line item \"Unlisted equipment charge\" has billing code \"XX100\", which is not in the set of recognized billing codes.",
+      "confidence": "0.70",
+      "line_item_ids": [
+        "L7"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "suspicious_code:unrecognized:L8",
+      "type": "suspicious_code",
+      "description": "Line item \"Unlisted facility charge\" has billing code \"XX200\", which is not in the set of recognized billing codes.",
+      "confidence": "0.70",
+      "line_item_ids": [
+        "L8"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "suspicious_code:missing:L9",
+      "type": "suspicious_code",
+      "description": "Line item \"Processing fee\" has no billing code.",
+      "confidence": "0.70",
+      "line_item_ids": [
+        "L9"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "suspicious_code:missing:L10",
+      "type": "suspicious_code",
+      "description": "Line item \"Administrative fee\" has no billing code.",
+      "confidence": "0.70",
+      "line_item_ids": [
+        "L10"
+      ],
+      "passage_ids": [],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "rights_issue:ma-itemized-bill-right",
+      "type": "rights_issue",
+      "description": "A potential patient-rights issue is supported by “Right to an itemized bill” (Massachusetts Patient Billing Rights — Reference Summary (synthetic reference corpus; original summaries, not verbatim statute text)): A patient has the right to request and receive a fully itemized bill from a hospital or provider that lists each service, procedure, medication, and supply as a separate line item with its individual charge and billing code. Providers are expected to furnish an itemized statement on request so the patient can review each charge. An itemized bill helps identify duplicate charges, unbundled services, and charges for services that were never received.",
+      "confidence": "0.9503",
+      "line_item_ids": [],
+      "passage_ids": [
+        "ma-itemized-bill-right"
+      ],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "rights_issue:ma-duplicate-charges",
+      "type": "rights_issue",
+      "description": "A potential patient-rights issue is supported by “Protection from duplicate charges” (Massachusetts Patient Billing Rights — Reference Summary (synthetic reference corpus; original summaries, not verbatim statute text)): Patients should not be charged more than once for the same service, procedure, or supply. Duplicate line items that repeat the same billing code and description for a single encounter may indicate a billing error. A patient may dispute duplicate charges and request that the provider correct the account and reissue a corrected statement.",
+      "confidence": "0.9469",
+      "line_item_ids": [],
+      "passage_ids": [
+        "ma-duplicate-charges"
+      ],
+      "computed_total": null,
+      "stated_total": null
+    },
+    {
+      "id": "rights_issue:ma-billing-code-errors",
+      "type": "rights_issue",
+      "description": "A potential patient-rights issue is supported by “Billing code errors” (Massachusetts Patient Billing Rights — Reference Summary (synthetic reference corpus; original summaries, not verbatim statute text)): Medical bills should use recognized billing codes such as CPT, HCPCS, or revenue codes that correspond to the services actually provided. A charge with a missing, invalid, or unrecognized billing code, or a code that does not match the described service, may be an error or an instance of upcoding. Patients can ask the provider to explain or substantiate any code they do not recognize.",
+      "confidence": "0.9374",
+      "line_item_ids": [],
+      "passage_ids": [
+        "ma-billing-code-errors"
+      ],
+      "computed_total": null,
+      "stated_total": null
+    }
+  ],
+  "language": "en"
+}
