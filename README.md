@@ -1,6 +1,11 @@
 # Boston Bill Party
 
 **No overcharging without representation.**
+## 🎥 Demo
+
+[![Watch the Boston Bill Party demo](https://img.youtube.com/vi/4zKEe4iPu68/maxresdefault.jpg)](https://www.youtube.com/watch?v=4zKEe4iPu68)
+
+▶️ [Watch the full demo on YouTube](https://www.youtube.com/watch?v=4zKEe4iPu68) · 🔗 [Try it live](https://boston-bill-party.vercel.app)
 
 A multi-agent AI patient advocate that audits medical bills and drafts appeal letters for Massachusetts residents. Built at Hackachusetts 2026.
 
